@@ -5,10 +5,11 @@ import (
 	"log"
 
 	"github.com/harry713j/vibe_writer/internal/config"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func ConnectDB(config *config.DBConfig) *sql.DB {
-	db, err := sql.Open("postgres", config.URL)
+	db, err := sql.Open("pgx", config.URL)
 
 	if err != nil {
 		log.Fatal(err)

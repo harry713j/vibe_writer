@@ -1,6 +1,8 @@
 package config
 
-import "os"
+import (
+	"os"
+)
 
 type DBConfig struct {
 	URL string
@@ -8,6 +10,5 @@ type DBConfig struct {
 
 func LoadDBConfig() *DBConfig {
 	dbUrl := os.Getenv("DATABASE_URL")
-
 	return &DBConfig{URL: dbUrl}
 }

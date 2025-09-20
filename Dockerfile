@@ -12,7 +12,7 @@ RUN go mod download
 COPY . .
 
 # Build static binary
-RUN CGO_ENABLED=0 go build -o vibewriter -ldflags="-w -s" .
+RUN CGO_ENABLED=0 go build -o vibewriter -ldflags="-w -s" ./cmd/server
 
 # Final stage
 FROM alpine:latest

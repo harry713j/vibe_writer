@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	chiMiddleware "github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
+	"github.com/harry713j/vibe_writer/internal/route"
 )
 
 type ServerConfig struct {
@@ -26,14 +26,11 @@ func LoadServerConfig() *ServerConfig {
 
 func NewServer(config *ServerConfig) *http.Server {
 	router := chi.NewRouter()
-
-	router.Use(chiMiddleware.RequestID)
-	router.Use(chiMiddleware.RealIP)
-	router.Use(chiMiddleware.Logger)
-	router.Use(chiMiddleware.Recoverer)
+	v1Router := route.RegisterRoutes()
+	router.Mount("/api/v1", v1Router)
 
 	server := &http.Server{
-		Addr:    config.Port,
+		Addr:    ":" + config.Port,
 		Handler: router,
 	}
 
