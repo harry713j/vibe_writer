@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/harry713j/vibe_writer/internal/app"
 	"github.com/harry713j/vibe_writer/internal/route"
 )
 
@@ -24,9 +25,9 @@ func LoadServerConfig() *ServerConfig {
 	return &ServerConfig{Port: port}
 }
 
-func NewServer(config *ServerConfig) *http.Server {
+func NewServer(config *ServerConfig, app *app.App) *http.Server {
 	router := chi.NewRouter()
-	v1Router := route.RegisterRoutes()
+	v1Router := route.RegisterRoutes(app)
 	router.Mount("/api/v1", v1Router)
 
 	server := &http.Server{

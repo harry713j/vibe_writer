@@ -14,7 +14,6 @@ func RespondWithJSON[T any](w http.ResponseWriter, code int, payload T) {
 	if err != nil {
 		log.Println("Failed to marshal json ", err)
 		w.WriteHeader(http.StatusInternalServerError)
-
 		return
 	}
 

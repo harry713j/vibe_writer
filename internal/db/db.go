@@ -2,18 +2,22 @@ package db
 
 import (
 	"database/sql"
-	"log"
 
 	"github.com/harry713j/vibe_writer/internal/config"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-func ConnectDB(config *config.DBConfig) *sql.DB {
+func ConnectDB(config *config.DBConfig) (*sql.DB, error) {
 	db, err := sql.Open("pgx", config.URL)
 
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	return db
+	// test connection
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }
