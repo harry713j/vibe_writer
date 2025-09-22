@@ -12,6 +12,7 @@ func AuthRoutes(h *handler.AuthHandler, auth func(http.Handler) http.Handler) ch
 
 	r.Post("/signup", h.HandleSignup)
 	r.Post("/login", h.HandleLogin)
+	r.Post("/refresh", h.HandleRefreshAccessToken)
 
 	r.Group(func(protected chi.Router) {
 		protected.Use(auth)

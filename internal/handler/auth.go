@@ -140,3 +140,33 @@ func (h *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 
 	utils.RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Log out successful"})
 }
+
+// refresh access token
+func (h *AuthHandler) HandleRefreshAccessToken(w http.ResponseWriter, r *http.Request) {
+	token, err := r.Cookie("refresh_token")
+
+	if err != nil {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	newAccessToken, err := h.service.RefreshAccessToken(token.Value)
+
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	at := &http.Cookie{
+		Name:     "access_token",
+		Value:    newAccessToken,
+		Path:     "/",
+		MaxAge:   900,
+		Expires:  time.Now().Add(15 * time.Minute),
+		Secure:   false,
+		HttpOnly: true,
+	}
+
+	http.SetCookie(w, at)
+	utils.RespondWithJSON(w, http.StatusNoContent, "")
+}

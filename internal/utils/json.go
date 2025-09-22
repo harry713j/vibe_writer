@@ -18,7 +18,10 @@ func RespondWithJSON[T any](w http.ResponseWriter, code int, payload T) {
 	}
 
 	w.WriteHeader(code)
-	w.Write(data)
+	if _, err := w.Write(data); err != nil {
+
+		log.Printf("Error writing response: %v\n", err)
+	}
 }
 
 func RespondWithError(w http.ResponseWriter, code int, message string) {

@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:alpine AS Builder
+FROM golang:alpine AS builder
 
 # Install git (needed for fetching private modules sometimes)
 RUN apk add --no-cache git
@@ -17,6 +17,6 @@ RUN GOOS=linux GOARCH=amd64 go build -o vibewriter ./cmd/server
 # Final stage
 FROM alpine:latest
 
-COPY --from=Builder /app/vibewriter .
+COPY --from=builder /app/vibewriter .
 
 CMD [ "./vibewriter" ]

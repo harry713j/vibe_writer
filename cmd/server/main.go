@@ -17,7 +17,12 @@ import (
 
 func main() {
 	// load the environment variables
-	godotenv.Load()
+	err := godotenv.Load()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	dbConfig := config.LoadDBConfig()
 	db, err := db.ConnectDB(dbConfig)
 

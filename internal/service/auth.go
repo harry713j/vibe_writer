@@ -100,7 +100,6 @@ func (service *AuthService) RefreshAccessToken(refreshTokenStr string) (string, 
 	if err != nil {
 		return "", err
 	}
-
 	// check validity of the token
 	if time.Now().After(refreshToken.ExpireAt) {
 		return "", errors.New("Refresh token is expired")
@@ -127,7 +126,6 @@ func (service *AuthService) generateAccessToken(user *model.User) (string, error
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
 	tokenStr, err := token.SignedString(service.jwtSecret)
 
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/harry713j/vibe_writer/internal/app"
@@ -31,8 +32,9 @@ func NewServer(config *ServerConfig, app *app.App) *http.Server {
 	router.Mount("/api/v1", v1Router)
 
 	server := &http.Server{
-		Addr:    ":" + config.Port,
-		Handler: router,
+		Addr:              ":" + config.Port,
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second, // for slowloris attack
 	}
 
 	return server
