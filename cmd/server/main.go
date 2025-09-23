@@ -36,14 +36,18 @@ func main() {
 
 	userRepo := repo.NewUserRepository(db)
 	refreshTokenRepo := repo.NewRefreshTokenRepository(db)
+	profileRepo := repo.NewUserProfileRepository(db)
 	jwtSecret := os.Getenv("ACCESS_TOKEN_SECRET")
 	accessTokenTTL := 15 * time.Minute
 
-	authService := service.NewAuthService(userRepo, refreshTokenRepo, jwtSecret, accessTokenTTL)
+	authService := service.NewAuthService(userRepo, profileRepo, refreshTokenRepo, jwtSecret, accessTokenTTL)
+	userProfileService := service.NewUserProfileService(profileRepo)
 
 	app := &app.App{
-		AuthService: authService,
-		AuthHandler: handler.NewAuthHandler(authService),
+		AuthService:        authService,
+		UserProfileService: userProfileService,
+		AuthHandler:        handler.NewAuthHandler(authService),
+		UserProfileHandler: handler.NewUserProfileHandler(userProfileService),
 	}
 
 	srv := server.NewServer(serverConfig, app)

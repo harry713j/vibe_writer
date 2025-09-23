@@ -12,16 +12,18 @@ import (
 
 type AuthService struct {
 	userRepo         *repo.UserRepository
+	profilrRepo      *repo.UserProfileRepository
 	refreshTokenRepo *repo.RefreshTokenRepository
 	jwtSecret        []byte
 	accessTokenTTL   time.Duration
 }
 
-func NewAuthService(userRepo *repo.UserRepository, refreshTokenRepo *repo.RefreshTokenRepository,
-	jwtSecret string, accessTokenTTL time.Duration) *AuthService {
+func NewAuthService(userRepo *repo.UserRepository, profileRepo *repo.UserProfileRepository,
+	refreshTokenRepo *repo.RefreshTokenRepository, jwtSecret string, accessTokenTTL time.Duration) *AuthService {
 
 	return &AuthService{
 		userRepo:         userRepo,
+		profilrRepo:      profileRepo,
 		refreshTokenRepo: refreshTokenRepo,
 		jwtSecret:        []byte(jwtSecret),
 		accessTokenTTL:   accessTokenTTL,
@@ -41,7 +43,6 @@ func (service *AuthService) RegisterUser(username, email, password string) (*mod
 	if err == nil {
 		return nil, errors.New("Email already in use")
 	}
-
 	// create user
 	hashedPassword, err := HashPassword(password)
 
@@ -52,6 +53,10 @@ func (service *AuthService) RegisterUser(username, email, password string) (*mod
 	user, err := service.userRepo.CreateUser(username, email, hashedPassword)
 
 	if err != nil {
+		return nil, err
+	}
+	// create user profile
+	if _, err := service.profilrRepo.CreateUserProfile(user.Id); err != nil {
 		return nil, err
 	}
 

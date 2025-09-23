@@ -6,6 +6,8 @@ import (
 )
 
 type App struct {
-	AuthService *service.AuthService
-	AuthHandler *handler.AuthHandler
+	AuthService        *service.AuthService
+	AuthHandler        *handler.AuthHandler
+	UserProfileService *service.UserProfileService
+	UserProfileHandler *handler.UserProfileHandler
 }

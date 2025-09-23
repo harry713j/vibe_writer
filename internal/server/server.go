@@ -30,8 +30,7 @@ func LoadServerConfig() *ServerConfig {
 func NewServer(config *ServerConfig, app *app.App) *http.Server {
 	router := chi.NewRouter()
 
-	// cors
-	cors.Handler(cors.Options{
+	cors := cors.Handler(cors.Options{
 		AllowedOrigins:   []string{os.Getenv("ALLOWED_ORIGIN")},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
@@ -39,6 +38,7 @@ func NewServer(config *ServerConfig, app *app.App) *http.Server {
 		MaxAge:           300, // Maximum value for preflight request
 	})
 
+	router.Use(cors)
 	v1Router := route.RegisterRoutes(app)
 	router.Mount("/api/v1", v1Router)
 
