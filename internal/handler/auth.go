@@ -95,6 +95,7 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		Expires:  time.Now().Add(7 * 24 * time.Hour),
 		MaxAge:   7 * 86400,
+		SameSite: http.SameSiteStrictMode,
 		Secure:   false, // true for https
 		HttpOnly: true,
 	}
@@ -105,6 +106,7 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		Expires:  time.Now().Add(15 * time.Minute),
 		MaxAge:   900,
+		SameSite: http.SameSiteStrictMode,
 		Secure:   false, // true for https
 		HttpOnly: true,
 	}
@@ -163,6 +165,7 @@ func (h *AuthHandler) HandleRefreshAccessToken(w http.ResponseWriter, r *http.Re
 		Path:     "/",
 		MaxAge:   900,
 		Expires:  time.Now().Add(15 * time.Minute),
+		SameSite: http.SameSiteStrictMode,
 		Secure:   false,
 		HttpOnly: true,
 	}
