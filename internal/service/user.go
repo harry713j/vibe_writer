@@ -56,7 +56,7 @@ func (p *UserProfileService) UpdateAvatar(userId uuid.UUID, avatarData multipart
 	}
 
 	baseFileName := uuid.New().String() // for security reason, attacker send ../../these type of file name
-	imgDest := filepath.Join("./temp", baseFileName)
+	imgDest := filepath.Join("./temp", baseFileName+ext)
 	// create on server
 	err := p.createImgFile(imgDest, avatarData)
 

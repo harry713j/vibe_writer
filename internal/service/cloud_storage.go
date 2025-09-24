@@ -3,31 +3,45 @@ package service
 import (
 	"context"
 	"log"
-	"os"
+	"path/filepath"
 
-	"github.com/cloudinary/cloudinary-go/v2"
 	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
+	"github.com/harry713j/vibe_writer/internal/config"
 )
 
 func UploadToCloud(fileName string) (string, error) {
-	cloudName := os.Getenv("CLOUD_NAME")
-	apiKey := os.Getenv("CLOUDINARY_API_KEY")
-	apiSecret := os.Getenv("CLOUDINARY_API_SECRET")
-
-	cloud, err := cloudinary.NewFromParams(cloudName, apiKey, apiSecret)
+	cloud, err := config.NewCloud()
 
 	if err != nil {
 		return "", err
 	}
 
 	ctx := context.Background()
-	resp, err := cloud.Upload.Upload(ctx, fileName, uploader.UploadParams{PublicID: fileName})
+	resp, err := cloud.Upload.Upload(ctx, fileName, uploader.UploadParams{PublicID: fileName, ResourceType: "image"})
 
 	if err != nil {
 		return "", err
 	}
 
-	log.Println("Cloudinary Response: ", resp) // Will Delete later, this line
+	log.Println("Cloudinary upload Response: ", resp) // Will Delete later, this line
 
 	return resp.SecureURL, nil
+}
+
+func DeleteFromCloud(imgUrl string) error {
+
+	cloud, err := config.NewCloud()
+
+	if err != nil {
+		return err
+	}
+
+	fileName := filepath.Base(imgUrl)
+	ctx := context.Background()
+
+	resp, err := cloud.Upload.Destroy(ctx, uploader.DestroyParams{PublicID: fileName})
+
+	log.Println("Cloudinary upload Response: ", resp) // Will Delete later, this line
+
+	return err
 }

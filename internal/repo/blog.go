@@ -88,17 +88,27 @@ func (b *BlogRepository) DeleteBlog(userId uuid.UUID, slug string) error {
 	return nil
 }
 
+// delete blog photos of a blog
+func (b *BlogRepository) DeleteBlogPhotosByURLs(blogId int64, photoURLs []string) error {
+	_, err := b.DB.Exec(
+		"DELETE FROM blog_photos WHERE blog_id=$1 AND photo_url = ANY($2)",
+		blogId,
+		photoURLs,
+	)
+	return err
+}
+
 // delete blog photo
-func (b *BlogRepository) DeleteBlogPhoto(blogId, blogPhotoId int64) error {
-	if _, err := b.DB.Exec("DELETE FROM blog_photos WHERE id=$1 AND blog_id=$2", blogPhotoId, blogId); err != nil {
+func (b *BlogRepository) DeleteBlogPhoto(blogId int64, photoUrl string) error {
+	if _, err := b.DB.Exec("DELETE FROM blog_photos WHERE photo_url=$1 AND blog_id=$2", photoUrl, blogId); err != nil {
 		return err
 	}
 	return nil
 }
 
 // get all the blogs of an user
-func (b *BlogRepository) GetAllBlog(userId uuid.UUID) ([]*model.BlogRes, error) {
-	var blogs []*model.BlogRes
+func (b *BlogRepository) GetAllBlog(userId uuid.UUID) ([]*model.BlogDetails, error) {
+	var blogs []*model.BlogDetails
 
 	query := `SELECT b.id, b.title, b.user_id, b.slug, b.content, b.created_at, b.updated_at, 
 	COALESCE(array_agg(bp.photo_url) FILTER (WHERE bp.photo_url IS NOT NULL), '{}')
@@ -113,7 +123,7 @@ func (b *BlogRepository) GetAllBlog(userId uuid.UUID) ([]*model.BlogRes, error) 
 	defer rows.Close()
 
 	for rows.Next() {
-		blog := &model.BlogRes{}
+		blog := &model.BlogDetails{}
 
 		err := rows.Scan(
 			&blog.Id,
@@ -137,8 +147,8 @@ func (b *BlogRepository) GetAllBlog(userId uuid.UUID) ([]*model.BlogRes, error) 
 }
 
 // get blog by slug
-func (b *BlogRepository) GetBlogBySlug(userId uuid.UUID, slug string) (*model.BlogRes, error) {
-	var blog model.BlogRes
+func (b *BlogRepository) GetBlogBySlug(userId uuid.UUID, slug string) (*model.BlogDetails, error) {
+	var blog model.BlogDetails
 
 	query := `SELECT b.id, b.title, b.user_id, b.slug, b.content, b.created_at, b.updated_at, 
 	COALESCE(array_agg(bp.photo_url) FILTER (WHERE bp.photo_url IS NOT NULL), '{}')
@@ -163,8 +173,8 @@ func (b *BlogRepository) GetBlogBySlug(userId uuid.UUID, slug string) (*model.Bl
 }
 
 // get blog by id
-func (b *BlogRepository) GetBlogById(userId uuid.UUID, blogId int64) (*model.BlogRes, error) {
-	var blog model.BlogRes
+func (b *BlogRepository) GetBlogById(userId uuid.UUID, blogId int64) (*model.BlogDetails, error) {
+	var blog model.BlogDetails
 
 	query := `SELECT b.id, b.title, b.user_id, b.slug, b.content, b.created_at, b.updated_at, 
 	COALESCE(array_agg(bp.photo_url) FILTER (WHERE bp.photo_url IS NOT NULL), '{}')
@@ -186,4 +196,26 @@ func (b *BlogRepository) GetBlogById(userId uuid.UUID, blogId int64) (*model.Blo
 	}
 
 	return &blog, nil
+}
+
+func (b *BlogRepository) GetPhotoUrls(blogId int64) ([]string, error) {
+	var photoUrls []string
+	rows, err := b.DB.Query("SELECT photo_url FROM blog_photos WHERE blog_id=$1", blogId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var url string
+		if err := rows.Scan(&url); err != nil {
+			return nil, err
+		}
+
+		photoUrls = append(photoUrls, url)
+	}
+
+	return photoUrls, nil
 }

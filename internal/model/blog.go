@@ -24,7 +24,7 @@ type BlogPhoto struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-type BlogRes struct {
+type BlogDetails struct {
 	Blog
 	PhotoUrls []string `json:"photo_urls"`
 }
