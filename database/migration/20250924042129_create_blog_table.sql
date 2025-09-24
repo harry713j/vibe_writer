@@ -1,0 +1,29 @@
+-- +goose Up
+CREATE TABLE IF NOT EXISTS blogs(
+    id BIGSERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    content TEXT NOT NULL,
+    visibility BOOLEAN DEFAULT true,
+    user_id UUID NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_user
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS blog_photos(
+    id BIGSERIAL PRIMARY KEY,
+    blog_id BIGINT NOT NULL,
+    photo_url TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_blog
+    FOREIGN KEY(blog_id) REFERENCES blogs(id) ON DELETE CASCADE
+);
+
+-- +goose Down
+DROP TABLE IF EXISTS blogs;
+DROP TABLE IF EXISTS blog_photos;
+
