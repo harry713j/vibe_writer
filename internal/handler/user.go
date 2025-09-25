@@ -24,6 +24,10 @@ type updateProfileRequest struct {
 	Bio      string `json:"bio"`
 }
 
+type updateAvatarRequest struct {
+	AvatarUrl string `json:"avatar_url"`
+}
+
 // update profile
 func (u *UserProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userId, ok := middleware.GetUserID(r)
@@ -61,35 +65,16 @@ func (u *UserProfileHandler) HandleUpdateAvatar(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	file, fileHeader, err := r.FormFile("avatar")
+	var request updateAvatarRequest
+
+	err := json.NewDecoder(r.Body).Decode(&request)
 
 	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Image file required")
+		utils.RespondWithError(w, http.StatusBadRequest, "Avatar url is required")
 		return
 	}
 
-	defer file.Close()
-
-	// check image type
-	buffer := make([]byte, 512)
-	if _, err := file.Read(buffer); err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Couldn't read file")
-		return
-	}
-
-	contentType := http.DetectContentType(buffer)
-	if contentType != "image/png" && contentType != "image/jpeg" {
-		utils.RespondWithError(w, http.StatusBadRequest, "Invalid image type")
-		return
-	}
-
-	// check file size
-	if fileHeader.Size > 5*1024*1024 {
-		utils.RespondWithError(w, http.StatusBadGateway, "Large image found")
-		return
-	}
-
-	userDetails, err := u.profileService.UpdateAvatar(userId, file, fileHeader.Filename)
+	userDetails, err := u.profileService.UpdateAvatar(userId, request.AvatarUrl)
 
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")

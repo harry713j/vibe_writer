@@ -1,6 +1,8 @@
 package service
 
 import (
+	"errors"
+
 	"github.com/google/uuid"
 	"github.com/harry713j/vibe_writer/internal/model"
 	"github.com/harry713j/vibe_writer/internal/repo"
@@ -9,16 +11,31 @@ import (
 
 type BlogService struct {
 	blogRepo *repo.BlogRepository
+	userRepo *repo.UserRepository
 }
 
-func NewBlogService(repo *repo.BlogRepository) *BlogService {
+var (
+	ErrBlogNotExists = errors.New("no blog exists with this slug")
+	ErrTitleExists   = errors.New("Blog with this title already exists")
+	ErrUserNotExists = errors.New("User not found")
+)
+
+func NewBlogService(blogRepo *repo.BlogRepository, userRepo *repo.UserRepository) *BlogService {
 	return &BlogService{
-		blogRepo: repo,
+		blogRepo: blogRepo,
+		userRepo: userRepo,
 	}
 }
 
 // create blog
 func (r *BlogService) CreateBlog(userId uuid.UUID, title, slug, content string, photoUrls []string) (*model.BlogDetails, error) {
+
+	err := r.blogRepo.GetBlogByTitle(userId, title)
+
+	if err == nil {
+		return nil, ErrTitleExists
+	}
+
 	randomHex, err := utils.RandomHex(16) // give a random hex of length 16
 	if err != nil {
 		return nil, err
@@ -49,6 +66,11 @@ func (r *BlogService) CreateBlog(userId uuid.UUID, title, slug, content string, 
 }
 
 func (r *BlogService) UpdateBlog(userId uuid.UUID, slug, title, content string, photoUrls []string) (*model.BlogDetails, error) {
+
+	// check blog exists or not
+	if _, err := r.blogRepo.GetBlogBySlug(userId, slug); err != nil {
+		return nil, ErrBlogNotExists
+	}
 
 	blogId, err := r.blogRepo.UpdateBlog(userId, slug, title, content)
 
@@ -104,11 +126,18 @@ func (r *BlogService) GetAllUserBlog(userId uuid.UUID) ([]*model.BlogDetails, er
 }
 
 // return `BlogDetails` with error
-func (r *BlogService) GetBlog(userId uuid.UUID, slug string) (*model.BlogDetails, error) {
-	blog, err := r.blogRepo.GetBlogBySlug(userId, slug)
+func (r *BlogService) GetBlog(username string, slug string) (*model.BlogDetails, error) {
+	// get the user details by username
+	user, err := r.userRepo.GetUserByUsername(username)
 
 	if err != nil {
-		return nil, err
+		return nil, ErrUserNotExists
+	}
+
+	blog, err := r.blogRepo.GetBlogBySlug(user.Id, slug)
+
+	if err != nil {
+		return nil, ErrBlogNotExists
 	}
 
 	return blog, nil

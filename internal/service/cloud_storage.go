@@ -9,6 +9,7 @@ import (
 	"github.com/harry713j/vibe_writer/internal/config"
 )
 
+// upload to cloud and return cloud url
 func UploadToCloud(fileName string) (string, error) {
 	cloud, err := config.NewCloud()
 

@@ -172,6 +172,18 @@ func (b *BlogRepository) GetBlogBySlug(userId uuid.UUID, slug string) (*model.Bl
 	return &blog, nil
 }
 
+// get blog by slug
+func (b *BlogRepository) GetBlogByTitle(userId uuid.UUID, title string) error {
+	query := `SELECT * FROM blogs  WHERE user_id=$1 AND title=$2`
+	_, err := b.DB.Exec(query, userId, title)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // get blog by id
 func (b *BlogRepository) GetBlogById(userId uuid.UUID, blogId int64) (*model.BlogDetails, error) {
 	var blog model.BlogDetails

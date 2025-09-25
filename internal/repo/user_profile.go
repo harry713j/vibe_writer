@@ -63,3 +63,14 @@ func (u *UserProfileRepository) GetUserDetails(userId uuid.UUID) (*model.UserDet
 
 	return &userData, nil
 }
+
+func (u *UserProfileRepository) GetAvatarUrl(userId uuid.UUID) (string, error) {
+	var avatarurl string
+	err := u.DB.QueryRow("SELECT avatar_url FROM user_profiles WHERE user_id=$1", userId).Scan(&avatarurl)
+
+	if err != nil {
+		return "", err
+	}
+
+	return avatarurl, nil
+}

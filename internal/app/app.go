@@ -10,4 +10,6 @@ type App struct {
 	AuthHandler        *handler.AuthHandler
 	UserProfileService *service.UserProfileService
 	UserProfileHandler *handler.UserProfileHandler
+	BlogService        *service.BlogService
+	BlogHandler        *handler.BlogHandler
 }
