@@ -93,6 +93,31 @@ func (r *BlogService) UpdateBlog(userId uuid.UUID, slug, title, content string, 
 	return blog, err
 }
 
+func (r *BlogService) GetAllUserBlog(userId uuid.UUID) ([]*model.BlogDetails, error) {
+	blogs, err := r.blogRepo.GetAllBlog(userId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return blogs, nil
+}
+
+// return `BlogDetails` with error
+func (r *BlogService) GetBlog(userId uuid.UUID, slug string) (*model.BlogDetails, error) {
+	blog, err := r.blogRepo.GetBlogBySlug(userId, slug)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return blog, nil
+}
+
+func (r *BlogService) DeleteBlog(userId uuid.UUID, slug string) error {
+	return r.blogRepo.DeleteBlog(userId, slug)
+}
+
 // returns string in a that are not present in b
 func (r *BlogService) differentUrls(a, b []string) []string {
 	m := make(map[string]bool)
