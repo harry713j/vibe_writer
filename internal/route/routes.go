@@ -21,6 +21,7 @@ func RegisterRoutes(app *app.App) *chi.Mux {
 	r.Mount("/users", UserProfileRoute(app.UserProfileHandler, middleware.AuthMiddleware(app.AuthService)))
 	r.Post("/upload", handler.HandleUploadToCloud)
 	r.Mount("/blogs", BlogRoutes(app.BlogHandler, middleware.AuthMiddleware(app.AuthService)))
+	r.Mount("/comments", CommentRoutes(app.CommentHandler, middleware.AuthMiddleware(app.AuthService)))
 
 	return r
 }

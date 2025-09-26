@@ -12,4 +12,6 @@ type App struct {
 	UserProfileHandler *handler.UserProfileHandler
 	BlogService        *service.BlogService
 	BlogHandler        *handler.BlogHandler
+	CommentService     *service.CommentService
+	CommentHandler     *handler.CommentHandler
 }

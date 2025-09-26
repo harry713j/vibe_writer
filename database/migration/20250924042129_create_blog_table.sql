@@ -24,6 +24,5 @@ CREATE TABLE IF NOT EXISTS blog_photos(
 );
 
 -- +goose Down
-DROP TABLE IF EXISTS blogs;
 DROP TABLE IF EXISTS blog_photos;
-
+DROP TABLE IF EXISTS blogs;

@@ -15,7 +15,7 @@ func BlogRoutes(h *handler.BlogHandler, auth func(http.Handler) http.Handler) ch
 	r.Group(func(r chi.Router) {
 		r.Use(auth)
 
-		r.Post("", h.HandleCreateBlog)
+		r.Post("/", h.HandleCreateBlog)
 		r.Put("/{slug}", h.HandleUpdateBlog)
 		r.Delete("/{slug}", h.HandleDeleteBlog)
 	})

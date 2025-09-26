@@ -20,7 +20,7 @@ func main() {
 	err := godotenv.Load()
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(".env file not found")
 	}
 
 	dbConfig := config.LoadDBConfig()
@@ -40,19 +40,23 @@ func main() {
 	accessTokenTTL := 15 * time.Minute
 	profileRepo := repo.NewUserProfileRepository(db)
 	blogRepo := repo.NewBlogRepository(db)
+	commentRepo := repo.NewCommentRepository(db)
 
 	authService := service.NewAuthService(userRepo, profileRepo, refreshTokenRepo, jwtSecret, accessTokenTTL)
 	userProfileService := service.NewUserProfileService(profileRepo, userRepo)
 	blogService := service.NewBlogService(blogRepo, userRepo)
+	commentService := service.NewCommentService(commentRepo, blogRepo, userRepo)
 
 	app := &app.App{
 		AuthService:        authService,
 		UserProfileService: userProfileService,
 		BlogService:        blogService,
+		CommentService:     commentService,
 
 		AuthHandler:        handler.NewAuthHandler(authService),
 		UserProfileHandler: handler.NewUserProfileHandler(userProfileService),
 		BlogHandler:        handler.NewBlogHandler(blogService),
+		CommentHandler:     handler.NewCommentHandler(commentService),
 	}
 
 	srv := server.NewServer(serverConfig, app)
