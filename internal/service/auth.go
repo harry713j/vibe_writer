@@ -11,10 +11,13 @@ import (
 )
 
 var (
-	ErrUsernameExists = errors.New("Username already exists")
-	ErrEmailExists    = errors.New("Email already in use")
-	ErrShortPassword  = errors.New("At least 8 characters password required")
-	ErrWrongPassword  = errors.New("Incorrect password")
+	ErrUsernameExists      = errors.New("username already exists")
+	ErrEmailExists         = errors.New("email already in use")
+	ErrShortPassword       = errors.New("at least 8 characters password required")
+	ErrWrongPassword       = errors.New("incorrect password")
+	ErrInvalidToken        = errors.New("invalid or corrupted token")
+	ErrExpiredToken        = errors.New("expired token")
+	ErrExpiredRefreshToken = errors.New("refresh token is expired")
 )
 
 type AuthService struct {
@@ -132,7 +135,7 @@ func (service *AuthService) RefreshAccessToken(refreshTokenStr string) (string, 
 	}
 	// check validity of the token
 	if time.Now().After(refreshToken.ExpireAt) {
-		return "", errors.New("Refresh token is expired")
+		return "", ErrExpiredRefreshToken
 	}
 	// get the user
 	user, err := service.userRepo.GetUserById(refreshToken.UserId)
@@ -168,7 +171,7 @@ func (service *AuthService) generateAccessToken(user *model.User) (string, error
 func (service *AuthService) ValidateJwtToken(tokenStr string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("Invalid or Corrupted token")
+			return nil, ErrInvalidToken
 		}
 
 		return service.jwtSecret, nil
@@ -176,14 +179,14 @@ func (service *AuthService) ValidateJwtToken(tokenStr string) (jwt.MapClaims, er
 
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
-			return nil, errors.New("Expired Token")
+			return nil, ErrExpiredToken
 		}
-		return nil, errors.New("Invalid or Corrupted token")
+		return nil, ErrInvalidToken
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		return claims, nil
 	}
 
-	return nil, errors.New("Invalid or Corrupted token")
+	return nil, ErrInvalidToken
 }

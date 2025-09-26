@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -38,6 +39,12 @@ func AuthMiddleware(authService *service.AuthService) func(http.Handler) http.Ha
 
 			if err != nil {
 				log.Println("JWT validation error ", err)
+
+				if errors.Is(err, service.ErrInvalidToken) || errors.Is(err, service.ErrExpiredToken) {
+					utils.RespondWithError(w, http.StatusUnauthorized, err.Error())
+					return
+				}
+
 				utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
 				return
 			}

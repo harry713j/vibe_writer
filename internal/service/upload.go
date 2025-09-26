@@ -11,6 +11,10 @@ import (
 	"github.com/google/uuid"
 )
 
+var (
+	ErrImageNotAllowed = errors.New("this image not allowed")
+)
+
 // for cloud upload
 func Upload(fileData multipart.File, fileName string) (string, error) {
 	// create the file in the server
@@ -24,11 +28,13 @@ func Upload(fileData multipart.File, fileName string) (string, error) {
 	case ".png", ".jpg", ".jpeg":
 		break
 	default:
-		return "", errors.New("This image file not allowed")
+		return "", ErrImageNotAllowed
 	}
 	// file created
 	newFileName := uuid.New().String() + ext
-	file, err := os.Create("./temp/" + newFileName)
+	filePath := filepath.Join("./temp", newFileName)
+	safePath := filepath.Clean(filePath)
+	file, err := os.Create(safePath)
 
 	if err != nil {
 		return "", err
@@ -38,16 +44,15 @@ func Upload(fileData multipart.File, fileName string) (string, error) {
 		return "", err
 	}
 
-	imgLocation := filepath.Join("./temp", newFileName)
 	// upload to cloud
-	imgUrl, err := UploadToCloud(imgLocation)
+	imgUrl, err := UploadToCloud(safePath)
 
 	if err != nil {
 		return "", err
 	}
 
 	// remove from the server
-	go removeImage(imgLocation)
+	go removeImage(safePath)
 
 	return imgUrl, nil
 }
