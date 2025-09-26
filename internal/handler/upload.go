@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/harry713j/vibe_writer/internal/middleware"
@@ -49,6 +50,12 @@ func HandleUploadToCloud(w http.ResponseWriter, r *http.Request) {
 	imgUrl, err := service.Upload(file, fileHeader.Filename)
 
 	if err != nil {
+
+		if errors.Is(err, service.ErrImageNotAllowed) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
 		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}

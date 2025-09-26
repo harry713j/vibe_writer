@@ -16,8 +16,8 @@ type BlogService struct {
 
 var (
 	ErrBlogNotExists = errors.New("no blog exists with this slug")
-	ErrTitleExists   = errors.New("Blog with this title already exists")
-	ErrUserNotExists = errors.New("User not found")
+	ErrTitleExists   = errors.New("blog with this title already exists")
+	ErrUserNotExists = errors.New("user not found")
 )
 
 func NewBlogService(blogRepo *repo.BlogRepository, userRepo *repo.UserRepository) *BlogService {
