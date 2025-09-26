@@ -2,7 +2,9 @@ package middleware
 
 import (
 	"context"
+	"log"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/harry713j/vibe_writer/internal/service"
@@ -11,22 +13,31 @@ import (
 
 type contextKey string
 
-const UserIdKey contextKey = "userID"
+const userIdKey contextKey = "userID"
 
 func AuthMiddleware(authService *service.AuthService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// extract the access token
-			token, err := r.Cookie("access_token")
+			authHeader := r.Header.Get("Authorization")
 
-			if err != nil {
-				utils.RespondWithError(w, http.StatusUnauthorized, "No access token found in cookie")
+			if authHeader == "" {
+				utils.RespondWithError(w, http.StatusUnauthorized, "No authorization header found")
 				return
 			}
+
+			authValues := strings.Split(authHeader, " ")
+
+			if len(authValues) != 2 || authValues[0] != "Bearer" {
+				utils.RespondWithError(w, http.StatusUnauthorized, "Invalid authorization header")
+				return
+			}
+			token := authValues[1]
 			// validate the token
-			claims, err := authService.ValidateJwtToken(token.Value)
+			claims, err := authService.ValidateJwtToken(token)
 
 			if err != nil {
+				log.Println("JWT validation error ", err)
 				utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
 				return
 			}
@@ -45,7 +56,7 @@ func AuthMiddleware(authService *service.AuthService) func(http.Handler) http.Ha
 				return
 			}
 			// add userId to request context
-			ctx := context.WithValue(r.Context(), UserIdKey, userId)
+			ctx := context.WithValue(r.Context(), userIdKey, userId)
 			// call next handler with the new request
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
@@ -54,6 +65,6 @@ func AuthMiddleware(authService *service.AuthService) func(http.Handler) http.Ha
 
 // GetUserID retrieves the user ID from the request context
 func GetUserID(r *http.Request) (uuid.UUID, bool) {
-	userID, ok := r.Context().Value(UserIdKey).(uuid.UUID)
+	userID, ok := r.Context().Value(userIdKey).(uuid.UUID)
 	return userID, ok
 }

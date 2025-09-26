@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/harry713j/vibe_writer/internal/middleware"
@@ -49,6 +50,11 @@ func (u *UserProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.
 	userDetails, err := u.profileService.UpdateUserProfile(userId, req.FullName, req.Bio)
 
 	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
 		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}
@@ -77,6 +83,11 @@ func (u *UserProfileHandler) HandleUpdateAvatar(w http.ResponseWriter, r *http.R
 	userDetails, err := u.profileService.UpdateAvatar(userId, request.AvatarUrl)
 
 	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
 		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}
@@ -96,6 +107,11 @@ func (u *UserProfileHandler) HandleGetUserDetails(w http.ResponseWriter, r *http
 	userDetails, err := u.profileService.GetUserDetails(userId)
 
 	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
 		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}

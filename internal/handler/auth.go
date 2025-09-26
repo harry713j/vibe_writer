@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -54,7 +55,13 @@ func (h *AuthHandler) HandleSignup(w http.ResponseWriter, r *http.Request) {
 	user, err := h.service.RegisterUser(req.Username, req.Email, req.Password)
 
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		if errors.Is(err, service.ErrUsernameExists) || errors.Is(err, service.ErrEmailExists) ||
+			errors.Is(err, service.ErrShortPassword) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}
 
@@ -84,7 +91,11 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	accessToken, refreshToken, err := h.service.LoginUser(req.Identifier, req.Password)
 
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrWrongPassword) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}
 
@@ -100,22 +111,11 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 	}
 
-	at := &http.Cookie{
-		Name:     "access_token",
-		Value:    accessToken,
-		Path:     "/",
-		Expires:  time.Now().Add(15 * time.Minute),
-		MaxAge:   900,
-		SameSite: http.SameSiteStrictMode,
-		Secure:   false, // true for https
-		HttpOnly: true,
-	}
-
 	http.SetCookie(w, rt)
-	http.SetCookie(w, at)
 
 	utils.RespondWithJSON(w, http.StatusOK, map[string]string{
-		"message": "Login successful",
+		"message":      "Login successful",
+		"access_token": accessToken,
 	})
 }
 
@@ -132,12 +132,15 @@ func (h *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	err := h.service.LogoutUser(userId)
 
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		if errors.Is(err, service.ErrUserNotExists) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}
 
-	// remove the access and refresh token cookies
-	http.SetCookie(w, &http.Cookie{Name: "access_token", Value: "", MaxAge: -1, Path: "/"})
 	http.SetCookie(w, &http.Cookie{Name: "refresh_token", Value: "", MaxAge: -1, Path: "/"})
 
 	utils.RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Log out successful"})
@@ -159,17 +162,7 @@ func (h *AuthHandler) HandleRefreshAccessToken(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	at := &http.Cookie{
-		Name:     "access_token",
-		Value:    newAccessToken,
-		Path:     "/",
-		MaxAge:   900,
-		Expires:  time.Now().Add(15 * time.Minute),
-		SameSite: http.SameSiteStrictMode,
-		Secure:   false,
-		HttpOnly: true,
-	}
-
-	http.SetCookie(w, at)
-	utils.RespondWithJSON(w, http.StatusNoContent, "")
+	utils.RespondWithJSON(w, http.StatusOK, map[string]string{
+		"access_token": newAccessToken,
+	})
 }

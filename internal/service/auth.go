@@ -10,6 +10,13 @@ import (
 	"github.com/harry713j/vibe_writer/internal/repo"
 )
 
+var (
+	ErrUsernameExists = errors.New("Username already exists")
+	ErrEmailExists    = errors.New("Email already in use")
+	ErrShortPassword  = errors.New("At least 8 characters password required")
+	ErrWrongPassword  = errors.New("Incorrect password")
+)
+
 type AuthService struct {
 	userRepo         *repo.UserRepository
 	profilrRepo      *repo.UserProfileRepository
@@ -35,14 +42,19 @@ func (service *AuthService) RegisterUser(username, email, password string) (*mod
 	_, err := service.userRepo.GetUserByUsername(username)
 
 	if err == nil {
-		return nil, errors.New("Username already exists")
+		return nil, ErrUsernameExists
 	}
 
 	_, err = service.userRepo.GetUserByEmail(email)
 
 	if err == nil {
-		return nil, errors.New("Email already in use")
+		return nil, ErrEmailExists
 	}
+
+	if len(password) < 8 {
+		return nil, ErrShortPassword
+	}
+
 	// create user
 	hashedPassword, err := HashPassword(password)
 
@@ -68,8 +80,16 @@ func (service *AuthService) LoginUser(identifier, password string) (accessToken 
 	user, err := service.userRepo.GetUserByIdentifier(identifier)
 
 	if err != nil {
-		return "", "", err
+		return "", "", ErrUserNotExists
 	}
+
+	// check the password
+	err = VerifyPassword(user.Password, password)
+
+	if err != nil {
+		return "", "", ErrWrongPassword
+	}
+
 	// create refresh token
 	refresh, err := service.refreshTokenRepo.CreateRefreshToken(user.Id)
 
@@ -87,9 +107,14 @@ func (service *AuthService) LoginUser(identifier, password string) (accessToken 
 }
 
 func (service *AuthService) LogoutUser(userId uuid.UUID) error {
-	err := service.refreshTokenRepo.DeleteRefreshToken(userId)
 
-	return err
+	if _, err := service.userRepo.GetUserById(userId); err != nil {
+		return ErrUserNotExists
+	}
+
+	go service.refreshTokenRepo.DeleteRefreshToken(userId)
+
+	return nil
 }
 
 func (service *AuthService) RefreshAccessToken(refreshTokenStr string) (string, error) {

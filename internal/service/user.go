@@ -1,26 +1,29 @@
 package service
 
 import (
-	"io"
-	"mime/multipart"
-	"os"
-
 	"github.com/google/uuid"
 	"github.com/harry713j/vibe_writer/internal/model"
 	"github.com/harry713j/vibe_writer/internal/repo"
 )
 
 type UserProfileService struct {
+	userRepo    *repo.UserRepository
 	profileRepo *repo.UserProfileRepository
 }
 
-func NewUserProfileService(profile *repo.UserProfileRepository) *UserProfileService {
+func NewUserProfileService(profile *repo.UserProfileRepository, user *repo.UserRepository) *UserProfileService {
 	return &UserProfileService{
 		profileRepo: profile,
+		userRepo:    user,
 	}
 }
 
 func (p *UserProfileService) UpdateUserProfile(userId uuid.UUID, fullName, bio string) (*model.UserDetails, error) {
+
+	if _, err := p.userRepo.GetUserById(userId); err != nil {
+		return nil, ErrUserNotExists
+	}
+
 	err := p.profileRepo.UpdateProfile(userId, fullName, bio)
 
 	if err != nil {
@@ -38,6 +41,11 @@ func (p *UserProfileService) UpdateUserProfile(userId uuid.UUID, fullName, bio s
 
 func (p *UserProfileService) UpdateAvatar(userId uuid.UUID, avatarUrl string) (*model.UserDetails, error) {
 	// get the old avatar url
+
+	if _, err := p.userRepo.GetUserById(userId); err != nil {
+		return nil, ErrUserNotExists
+	}
+
 	oldAvatar, err := p.profileRepo.GetAvatarUrl(userId)
 
 	if err != nil {
@@ -62,6 +70,10 @@ func (p *UserProfileService) UpdateAvatar(userId uuid.UUID, avatarUrl string) (*
 }
 
 func (p *UserProfileService) GetUserDetails(userId uuid.UUID) (*model.UserDetails, error) {
+	if _, err := p.userRepo.GetUserById(userId); err != nil {
+		return nil, ErrUserNotExists
+	}
+
 	userData, err := p.profileRepo.GetUserDetails(userId)
 
 	if err != nil {
@@ -69,23 +81,4 @@ func (p *UserProfileService) GetUserDetails(userId uuid.UUID) (*model.UserDetail
 	}
 
 	return userData, nil
-}
-
-func (p *UserProfileService) createImgFile(imgLocation string, fileData multipart.File) error {
-	// #nosec G304 -- safe: filename sanitized and stored only in ./temp
-	file, err := os.Create(imgLocation)
-
-	if err != nil {
-		return err
-	}
-
-	if _, err := io.Copy(file, fileData); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (p *UserProfileService) removeImgFile(imgLocation string) error {
-	return os.Remove(imgLocation)
 }

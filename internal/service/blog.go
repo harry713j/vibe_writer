@@ -144,6 +144,11 @@ func (r *BlogService) GetBlog(username string, slug string) (*model.BlogDetails,
 }
 
 func (r *BlogService) DeleteBlog(userId uuid.UUID, slug string) error {
+	// check the blog exists or not
+	if _, err := r.blogRepo.GetBlogBySlug(userId, slug); err != nil {
+		return ErrBlogNotExists
+	}
+
 	return r.blogRepo.DeleteBlog(userId, slug)
 }
 

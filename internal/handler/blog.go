@@ -59,7 +59,6 @@ func (h *BlogHandler) HandleCreateBlog(w http.ResponseWriter, r *http.Request) {
 	blogData, err := h.blogService.CreateBlog(userId, req.Title, req.Slug, req.Content, req.PhotoUrls)
 
 	if err != nil {
-
 		if errors.Is(err, service.ErrTitleExists) {
 			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
 			return
@@ -166,6 +165,11 @@ func (h *BlogHandler) HandleDeleteBlog(w http.ResponseWriter, r *http.Request) {
 	err := h.blogService.DeleteBlog(userId, slug)
 
 	if err != nil {
+		if errors.Is(err, service.ErrBlogNotExists) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
 		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}

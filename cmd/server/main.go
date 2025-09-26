@@ -42,7 +42,7 @@ func main() {
 	blogRepo := repo.NewBlogRepository(db)
 
 	authService := service.NewAuthService(userRepo, profileRepo, refreshTokenRepo, jwtSecret, accessTokenTTL)
-	userProfileService := service.NewUserProfileService(profileRepo)
+	userProfileService := service.NewUserProfileService(profileRepo, userRepo)
 	blogService := service.NewBlogService(blogRepo, userRepo)
 
 	app := &app.App{
