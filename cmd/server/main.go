@@ -41,22 +41,26 @@ func main() {
 	profileRepo := repo.NewUserProfileRepository(db)
 	blogRepo := repo.NewBlogRepository(db)
 	commentRepo := repo.NewCommentRepository(db)
+	likeRepo := repo.NewLikeRepository(db)
 
 	authService := service.NewAuthService(userRepo, profileRepo, refreshTokenRepo, jwtSecret, accessTokenTTL)
 	userProfileService := service.NewUserProfileService(profileRepo, userRepo)
 	blogService := service.NewBlogService(blogRepo, userRepo)
 	commentService := service.NewCommentService(commentRepo, blogRepo, userRepo)
+	likeService := service.NewLikeService(likeRepo, userRepo, blogRepo, commentRepo)
 
 	app := &app.App{
 		AuthService:        authService,
 		UserProfileService: userProfileService,
 		BlogService:        blogService,
 		CommentService:     commentService,
+		LikeService:        likeService,
 
 		AuthHandler:        handler.NewAuthHandler(authService),
 		UserProfileHandler: handler.NewUserProfileHandler(userProfileService),
 		BlogHandler:        handler.NewBlogHandler(blogService),
 		CommentHandler:     handler.NewCommentHandler(commentService),
+		LikeHandler:        handler.NewLikeHandler(likeService),
 	}
 
 	srv := server.NewServer(serverConfig, app)

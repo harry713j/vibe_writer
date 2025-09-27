@@ -24,7 +24,7 @@ func (c *CommentRepository) CreateComment(userId uuid.UUID, blogId int64, parent
 
 	if parentId != 0 {
 		query = `INSERT INTO comments(user_id, blog_id, parent_id, content) 
-			VALUES($1, $2, $3, $4) RETURNNING id`
+			VALUES($1, $2, $3, $4) RETURNING id`
 
 		err := c.DB.QueryRow(query, userId, blogId, parentId, content).Scan(&comment)
 
@@ -52,6 +52,18 @@ func (c *CommentRepository) GetCommentById(userId uuid.UUID, id int64) (*model.C
 	var comment model.Comment
 
 	err := c.DB.QueryRow("SELECT * FROM comments WHERE user_id=$1 AND blog_id=$2", userId, id).Scan(&comment)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &comment, nil
+}
+
+func (c *CommentRepository) GetComment(id int64) (*model.Comment, error) {
+	var comment model.Comment
+
+	err := c.DB.QueryRow("SELECT * FROM comments WHERE AND blog_id=$2", id).Scan(&comment)
 
 	if err != nil {
 		return nil, err

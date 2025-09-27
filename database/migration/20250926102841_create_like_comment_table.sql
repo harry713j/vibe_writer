@@ -39,7 +39,27 @@ CREATE TABLE IF NOT EXISTS likes(
     )
 );
 
+CREATE UNIQUE INDEX unique_user_blog_like ON likes(user_id, blog_id) WHERE blog_id IS NOT NULL;
+CREATE UNIQUE INDEX unique_user_comment_like ON likes(user_id, comment_id) WHERE comment_id IS NOT NULL;
+
+ALTER TABLE likes
+ADD CONSTRAINT user_blog_like
+UNIQUE USING INDEX unique_user_blog_like;
+
+ALTER TABLE likes
+ADD CONSTRAINT user_comment_like
+UNIQUE USING INDEX unique_user_comment_like;
+
 -- +goose Down
+ALTER TABLE likes
+DROP CONSTRAINT IF EXISTS user_comment_like;
+
+ALTER TABLE likes
+DROP CONSTRAINT IF EXISTS user_blog_like;
+
+DROP INDEX IF EXISTS unique_user_comment_like;
+DROP INDEX IF EXISTS unique_user_blog_like;
+
 DROP TABLE IF EXISTS likes;
 DROP TYPE liketype;
 DROP TABLE IF EXISTS comments;
