@@ -1,6 +1,5 @@
 .env
 
-design.md
+/design
 /bin
 /vendor
-todo.md

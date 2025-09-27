@@ -40,7 +40,7 @@ func (r *UserRepository) CreateUser(username, email, password string) (*model.Us
 // get user by id and username
 func (r *UserRepository) GetUserById(id uuid.UUID) (*model.User, error) {
 	var user model.User
-	err := r.DB.QueryRow("SELCT * FROM users WHERE id=$1", id).Scan(&user)
+	err := r.DB.QueryRow("SELCT * FROM users WHERE id=$1", id).Scan(&user.Id, &user.Username, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt)
 
 	if err != nil {
 		return nil, err
@@ -51,7 +51,9 @@ func (r *UserRepository) GetUserById(id uuid.UUID) (*model.User, error) {
 
 func (r *UserRepository) GetUserByIdentifier(idntifier string) (*model.User, error) {
 	var user model.User
-	err := r.DB.QueryRow("SELECT * FROM users WHERE username=$1 OR email=$2", idntifier, idntifier).Scan(&user)
+	err := r.DB.QueryRow("SELECT * FROM users WHERE username=$1 OR email=$2", idntifier, idntifier).Scan(
+		&user.Id, &user.Username, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt,
+	)
 
 	if err != nil {
 		return nil, err
@@ -73,7 +75,7 @@ func (r *UserRepository) GetUserByUsername(username string) (*model.User, error)
 
 func (r *UserRepository) GetUserByEmail(email string) (*model.User, error) {
 	var user model.User
-	err := r.DB.QueryRow("SELCT * FROM users WHERE email=$1", email).Scan(&user)
+	err := r.DB.QueryRow("SELCT * FROM users WHERE email=$1", email).Scan(&user.Id, &user.Username, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt)
 
 	if err != nil {
 		return nil, err

@@ -93,6 +93,7 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrWrongPassword) {
 			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
 		}
 
 		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
