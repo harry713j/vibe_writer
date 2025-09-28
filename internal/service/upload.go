@@ -31,9 +31,14 @@ func Upload(fileData multipart.File, fileName string) (string, error) {
 		return "", ErrImageNotAllowed
 	}
 	// file created
-	newFileName := uuid.New().String() + ext
+	newFileName := uuid.New().String()
 	filePath := filepath.Join("./temp", newFileName)
 	safePath := filepath.Clean(filePath)
+
+	if err := os.MkdirAll("./temp", 0755); err != nil {
+		return "", err
+	}
+
 	file, err := os.Create(safePath)
 
 	if err != nil {
@@ -44,8 +49,10 @@ func Upload(fileData multipart.File, fileName string) (string, error) {
 		return "", err
 	}
 
+	file.Close()
+
 	// upload to cloud
-	imgUrl, err := UploadToCloud(safePath)
+	imgUrl, err := UploadToCloud(safePath, newFileName)
 
 	if err != nil {
 		return "", err

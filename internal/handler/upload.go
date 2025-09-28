@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"io"
 	"net/http"
 
 	"github.com/harry713j/vibe_writer/internal/middleware"
@@ -44,6 +45,11 @@ func HandleUploadToCloud(w http.ResponseWriter, r *http.Request) {
 	// check file size
 	if fileHeader.Size > 5*1024*1024 {
 		utils.RespondWithError(w, http.StatusBadRequest, "Large image found")
+		return
+	}
+
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}
 

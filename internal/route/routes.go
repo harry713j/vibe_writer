@@ -19,10 +19,13 @@ func RegisterRoutes(app *app.App) *chi.Mux {
 	r.Get("/health", handler.HandleHealth)
 	r.Mount("/auth", AuthRoutes(app.AuthHandler, middleware.AuthMiddleware(app.AuthService)))
 	r.Mount("/users", UserProfileRoute(app.UserProfileHandler, middleware.AuthMiddleware(app.AuthService)))
-	r.Post("/upload", handler.HandleUploadToCloud)
 	r.Mount("/blogs", BlogRoutes(app.BlogHandler, middleware.AuthMiddleware(app.AuthService)))
 	r.Mount("/comments", CommentRoutes(app.CommentHandler, middleware.AuthMiddleware(app.AuthService)))
 	r.Mount("/likes", LikeRoutes(app.LikeHandler, middleware.AuthMiddleware(app.AuthService)))
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(app.AuthService))
+		r.Post("/upload", handler.HandleUploadToCloud)
+	})
 
 	return r
 }

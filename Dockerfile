@@ -17,6 +17,10 @@ RUN GOOS=linux GOARCH=amd64 go build -o vibewriter ./cmd/server
 # Final stage
 FROM alpine:latest
 
-COPY --from=builder /app/vibewriter .
+WORKDIR /app
+
+COPY --from=builder /app/vibewriter /app/
+# Create temp directory inside container
+RUN mkdir -p temp
 
 CMD [ "./vibewriter" ]

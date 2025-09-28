@@ -63,7 +63,7 @@ func (p *UserProfileService) UpdateAvatar(userId uuid.UUID, avatarUrl string) (*
 		return nil, err
 	}
 
-	// reove the old avatar from cloud
+	// remove the old avatar from cloud
 	go DeleteFromCloud(oldAvatar)
 
 	return userData, nil

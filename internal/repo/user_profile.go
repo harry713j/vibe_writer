@@ -51,11 +51,22 @@ func (u *UserProfileRepository) UpdateAvatar(userId uuid.UUID, avatarUrl string)
 func (u *UserProfileRepository) GetUserDetails(userId uuid.UUID) (*model.UserDetails, error) {
 	var userData model.UserDetails
 
-	query := `SELECT up.full_name, up.bio, up.avatar_url, u.id, u.username, u.email, u.created_at, u.updated_at 
+	query := `SELECT u.id, u.username, u.email, u.created_at, u.updated_at, 
+	COALESCE(up.full_name,'') AS full_name, COALESCE(up.bio, '') AS bio,
+	COALESCE(up.avatar_url, '') AS avatar_url
 	FROM user_profiles up INNER JOIN users u ON up.user_id = u.id 
 	WHERE up.user_id = $1`
 
-	err := u.DB.QueryRow(query, userId).Scan(&userData)
+	err := u.DB.QueryRow(query, userId).Scan(
+		&userData.Id,
+		&userData.Username,
+		&userData.Email,
+		&userData.CreatedAt,
+		&userData.UpdatedAt,
+		&userData.FullName,
+		&userData.Bio,
+		&userData.AvatarUrl,
+	)
 
 	if err != nil {
 		return nil, err
@@ -66,7 +77,7 @@ func (u *UserProfileRepository) GetUserDetails(userId uuid.UUID) (*model.UserDet
 
 func (u *UserProfileRepository) GetAvatarUrl(userId uuid.UUID) (string, error) {
 	var avatarurl string
-	err := u.DB.QueryRow("SELECT avatar_url FROM user_profiles WHERE user_id=$1", userId).Scan(&avatarurl)
+	err := u.DB.QueryRow("SELECT COALESCE(avatar_url,'') AS avatar_url FROM user_profiles WHERE user_id=$1", userId).Scan(&avatarurl)
 
 	if err != nil {
 		return "", err

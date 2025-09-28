@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"log"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -148,10 +147,9 @@ func (service *AuthService) RefreshAccessToken(refreshTokenStr string) (string, 
 	newAccessToken, err := service.generateAccessToken(user)
 
 	if err != nil {
-		log.Println(err)
 		return "", err
 	}
-	log.Println("New Access token: ", newAccessToken)
+
 	return newAccessToken, nil
 }
 

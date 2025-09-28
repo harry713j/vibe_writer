@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"log"
 	"path/filepath"
 
@@ -10,7 +11,7 @@ import (
 )
 
 // upload to cloud and return cloud url
-func UploadToCloud(fileName string) (string, error) {
+func UploadToCloud(filePath, fileName string) (string, error) {
 	cloud, err := config.NewCloud()
 
 	if err != nil {
@@ -18,13 +19,18 @@ func UploadToCloud(fileName string) (string, error) {
 	}
 
 	ctx := context.Background()
-	resp, err := cloud.Upload.Upload(ctx, fileName, uploader.UploadParams{PublicID: fileName, ResourceType: "image"})
+	resp, err := cloud.Upload.Upload(ctx, filePath, uploader.UploadParams{PublicID: fileName, ResourceType: "image"})
 
 	if err != nil {
+		log.Println("Err: ", err)
 		return "", err
 	}
 
 	log.Println("Cloudinary upload Response: ", resp) // Will Delete later, this line
+
+	if resp.SecureURL == "" {
+		return "", errors.New("failed to upload to cloud")
+	}
 
 	return resp.SecureURL, nil
 }
