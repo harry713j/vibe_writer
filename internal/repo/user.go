@@ -2,6 +2,7 @@ package repo
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -40,9 +41,10 @@ func (r *UserRepository) CreateUser(username, email, password string) (*model.Us
 // get user by id and username
 func (r *UserRepository) GetUserById(id uuid.UUID) (*model.User, error) {
 	var user model.User
-	err := r.DB.QueryRow("SELCT * FROM users WHERE id=$1", id).Scan(&user.Id, &user.Username, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt)
+	err := r.DB.QueryRow("SELECT * FROM users WHERE id=$1", id).Scan(&user.Id, &user.Username, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt)
 
 	if err != nil {
+		fmt.Println("Err:", err)
 		return nil, err
 	}
 

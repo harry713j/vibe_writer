@@ -28,8 +28,7 @@ func (r *RefreshTokenRepository) CreateRefreshToken(userId uuid.UUID) (*model.Re
 	}
 
 	_, err := r.DB.Exec("INSERT INTO refresh_tokens(user_id, token, expire_at, created_at) VALUES($1, $2, $3, $4)",
-		token.UserId, token.Token, token.CreatedAt, token.ExpireAt)
-
+		token.UserId, token.Token, token.ExpireAt, token.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +40,9 @@ func (r *RefreshTokenRepository) CreateRefreshToken(userId uuid.UUID) (*model.Re
 func (r *RefreshTokenRepository) GetRefreshToken(tokenValue uuid.UUID) (*model.RefreshToken, error) {
 	var refreshToken model.RefreshToken
 
-	err := r.DB.QueryRow("SELECT * FROM refresh_tokens WHERE token=$1", tokenValue).Scan(&refreshToken)
+	err := r.DB.QueryRow("SELECT * FROM refresh_tokens WHERE token=$1", tokenValue).Scan(
+		&refreshToken.Id, &refreshToken.UserId, &refreshToken.Token, &refreshToken.ExpireAt, &refreshToken.CreatedAt,
+	)
 
 	if err != nil {
 		return nil, err

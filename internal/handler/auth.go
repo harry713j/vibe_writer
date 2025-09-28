@@ -160,7 +160,8 @@ func (h *AuthHandler) HandleRefreshAccessToken(w http.ResponseWriter, r *http.Re
 
 	if err != nil {
 
-		if errors.Is(err, service.ErrExpiredRefreshToken) {
+		if errors.Is(err, service.ErrExpiredRefreshToken) || errors.Is(err, service.ErrInvalidRefreshToken) ||
+			errors.Is(err, service.ErrUserNotExists) {
 			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
 			return
 		}

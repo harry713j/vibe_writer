@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -18,6 +19,7 @@ var (
 	ErrInvalidToken        = errors.New("invalid or corrupted token")
 	ErrExpiredToken        = errors.New("expired token")
 	ErrExpiredRefreshToken = errors.New("refresh token is expired")
+	ErrInvalidRefreshToken = errors.New("invalid refresh token")
 )
 
 type AuthService struct {
@@ -125,13 +127,12 @@ func (service *AuthService) RefreshAccessToken(refreshTokenStr string) (string, 
 	refreshTokenUUID, err := uuid.Parse(refreshTokenStr)
 
 	if err != nil {
-		return "", err
+		return "", ErrInvalidRefreshToken
 	}
 
 	refreshToken, err := service.refreshTokenRepo.GetRefreshToken(refreshTokenUUID)
-
 	if err != nil {
-		return "", err
+		return "", ErrInvalidRefreshToken
 	}
 	// check validity of the token
 	if time.Now().After(refreshToken.ExpireAt) {
@@ -141,10 +142,17 @@ func (service *AuthService) RefreshAccessToken(refreshTokenStr string) (string, 
 	user, err := service.userRepo.GetUserById(refreshToken.UserId)
 
 	if err != nil {
-		return "", err
+		return "", ErrUserNotExists
 	}
 	// generate access token
-	return service.generateAccessToken(user)
+	newAccessToken, err := service.generateAccessToken(user)
+
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	log.Println("New Access token: ", newAccessToken)
+	return newAccessToken, nil
 }
 
 func (service *AuthService) generateAccessToken(user *model.User) (string, error) {
