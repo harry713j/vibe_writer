@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"path/filepath"
+	"strings"
 
 	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 	"github.com/harry713j/vibe_writer/internal/config"
@@ -26,8 +27,6 @@ func UploadToCloud(filePath, fileName string) (string, error) {
 		return "", err
 	}
 
-	log.Println("Cloudinary upload Response: ", resp) // Will Delete later, this line
-
 	if resp.SecureURL == "" {
 		return "", errors.New("failed to upload to cloud")
 	}
@@ -44,11 +43,17 @@ func DeleteFromCloud(imgUrl string) error {
 	}
 
 	fileName := filepath.Base(imgUrl)
+	publicId := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+	log.Printf("imgUrl: %v , fileName: %v\n", imgUrl, publicId)
 	ctx := context.Background()
 
-	resp, err := cloud.Upload.Destroy(ctx, uploader.DestroyParams{PublicID: fileName})
+	resp, err := cloud.Upload.Destroy(ctx, uploader.DestroyParams{PublicID: publicId, ResourceType: "image"})
 
-	log.Println("Cloudinary upload Response: ", resp) // Will Delete later, this line
+	if err != nil {
+		return err
+	}
 
-	return err
+	log.Println("Cloudinary delete Response: ", resp) // Will Delete later, this line
+
+	return nil
 }
