@@ -24,7 +24,25 @@ type BlogPhoto struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-type BlogDetails struct {
+type BlogSummary struct {
 	Blog
-	PhotoUrls []string `json:"photo_urls"`
+	Thumbnail    string `json:"blog_thumbnail"`
+	LikesCount   int    `json:"likes_count"`
+	DislikeCount int    `json:"dislikes_count"`
+	CommentCount int    `json:"comments_count"`
+}
+
+type BlogWithStat struct {
+	Blog
+	PhotoUrls    []string `json:"photo_urls"`
+	LikeCount    int      `json:"likes_count"`
+	DislikeCount int      `json:"dislikes_count"`
+}
+
+type BlogResponse struct {
+	BlogWithStat
+	Comments     []CommentWithStat `json:"comments"`
+	AuthorName   string            `json:"author_name"`
+	AuthorBio    string            `json:"author_bio"`
+	AuthorAvatar string            `json:"author_avatar"`
 }

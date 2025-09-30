@@ -28,7 +28,7 @@ func NewBlogService(blogRepo *repo.BlogRepository, userRepo *repo.UserRepository
 }
 
 // create blog
-func (r *BlogService) CreateBlog(userId uuid.UUID, title, slug, content string, photoUrls []string) (*model.BlogDetails, error) {
+func (r *BlogService) CreateBlog(userId uuid.UUID, title, slug, content string, photoUrls []string) (*model.BlogResponse, error) {
 
 	err := r.blogRepo.GetBlogByTitle(userId, title)
 
@@ -65,7 +65,7 @@ func (r *BlogService) CreateBlog(userId uuid.UUID, title, slug, content string, 
 	return blog, nil
 }
 
-func (r *BlogService) UpdateBlog(userId uuid.UUID, slug, title, content string, photoUrls []string) (*model.BlogDetails, error) {
+func (r *BlogService) UpdateBlog(userId uuid.UUID, slug, title, content string, photoUrls []string) (*model.BlogResponse, error) {
 
 	// check blog exists or not
 	if _, err := r.blogRepo.GetBlogBySlug(userId, slug); err != nil {
@@ -115,7 +115,7 @@ func (r *BlogService) UpdateBlog(userId uuid.UUID, slug, title, content string, 
 	return blog, err
 }
 
-func (r *BlogService) GetAllUserBlog(userId uuid.UUID) ([]*model.BlogDetails, error) {
+func (r *BlogService) GetAllUserBlog(userId uuid.UUID) ([]model.BlogSummary, error) {
 	blogs, err := r.blogRepo.GetAllBlog(userId)
 
 	if err != nil {
@@ -126,7 +126,7 @@ func (r *BlogService) GetAllUserBlog(userId uuid.UUID) ([]*model.BlogDetails, er
 }
 
 // return `BlogDetails` with error
-func (r *BlogService) GetBlog(username string, slug string) (*model.BlogDetails, error) {
+func (r *BlogService) GetBlog(username string, slug string) (*model.BlogResponse, error) {
 	// get the user details by username
 	user, err := r.userRepo.GetUserByUsername(username)
 

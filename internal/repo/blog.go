@@ -18,6 +18,12 @@ func NewBlogRepository(db *sql.DB) *BlogRepository {
 	}
 }
 
+type authorData struct {
+	FullName string `json:"author_name"`
+	Bio      string `json:"author_bio"`
+	Avatar   string `json:"author_avatar"`
+}
+
 // create blog
 func (b *BlogRepository) CreateBlog(userId uuid.UUID, title, slug, content string) (int64, error) {
 	blog := &model.Blog{
@@ -107,12 +113,34 @@ func (b *BlogRepository) DeleteBlogPhoto(blogId int64, photoUrl string) error {
 }
 
 // get all the blogs of an user
-func (b *BlogRepository) GetAllBlog(userId uuid.UUID) ([]*model.BlogDetails, error) {
-	var blogs []*model.BlogDetails
-
-	query := `SELECT b.id, b.title, b.user_id, b.slug, b.content, b.created_at, b.updated_at, 
-	COALESCE(array_agg(bp.photo_url) FILTER (WHERE bp.photo_url IS NOT NULL), '{}')
-		 FROM blogs b LEFT JOIN blog_photos bp ON b.id = bp.blog_id WHERE b.user_id=$1 GROUP BY b.id`
+func (b *BlogRepository) GetAllBlog(userId uuid.UUID) ([]model.BlogSummary, error) {
+	var blogs []model.BlogSummary
+	query := `
+		SELECT 
+			b.id,
+			b.title,
+			b.slug,
+			b.content,
+			b.visibility,
+			b.user_id,
+			b.created_at,
+			b.updated_at,
+			COALESCE((
+				SELECT bp.photo_url 
+				FROM blog_photos bp 
+				WHERE bp.blog_id = b.id 
+				ORDER BY bp.id ASC 
+				LIMIT 1
+			), '') AS blog_thumbnail,
+			COUNT(l.*) FILTER (WHERE l.like_type = 'like')    AS likes_count,
+			COUNT(l.*) FILTER (WHERE l.like_type = 'dislike') AS dislikes_count,
+			COUNT(DISTINCT c.id) AS comments_count
+		FROM blogs b
+		LEFT JOIN likes l ON l.blog_id = b.id
+		LEFT JOIN comments c ON c.blog_id = b.id
+		WHERE b.user_id = $1
+		GROUP BY b.id, b.title, b.slug, b.content, b.user_id, b.created_at, b.updated_at
+		ORDER BY b.created_at DESC`
 
 	rows, err := b.DB.Query(query, userId)
 
@@ -123,7 +151,7 @@ func (b *BlogRepository) GetAllBlog(userId uuid.UUID) ([]*model.BlogDetails, err
 	defer rows.Close()
 
 	for rows.Next() {
-		blog := &model.BlogDetails{}
+		blog := model.BlogSummary{}
 
 		err := rows.Scan(
 			&blog.Id,
@@ -131,9 +159,13 @@ func (b *BlogRepository) GetAllBlog(userId uuid.UUID) ([]*model.BlogDetails, err
 			&blog.UserId,
 			&blog.Slug,
 			&blog.Content,
+			&blog.Visibility,
 			&blog.CreatedAt,
 			&blog.UpdatedAt,
-			&blog.PhotoUrls,
+			&blog.Thumbnail,
+			&blog.LikesCount,
+			&blog.DislikeCount,
+			&blog.CommentCount,
 		)
 
 		if err != nil {
@@ -147,32 +179,38 @@ func (b *BlogRepository) GetAllBlog(userId uuid.UUID) ([]*model.BlogDetails, err
 }
 
 // get blog by slug
-func (b *BlogRepository) GetBlogBySlug(userId uuid.UUID, slug string) (*model.BlogDetails, error) {
-	var blog model.BlogDetails
-
-	query := `SELECT b.id, b.title, b.user_id, b.slug, b.content, b.created_at, b.updated_at, 
-	COALESCE(array_agg(bp.photo_url) FILTER (WHERE bp.photo_url IS NOT NULL), '{}')
-		 FROM blogs b LEFT JOIN blog_photos bp ON b.id = bp.blog_id WHERE b.user_id=$1 AND b.slug=$2 GROUP BY b.id`
-
-	err := b.DB.QueryRow(query, userId, slug).Scan(
-		&blog.Id,
-		&blog.Title,
-		&blog.UserId,
-		&blog.Slug,
-		&blog.Content,
-		&blog.CreatedAt,
-		&blog.UpdatedAt,
-		&blog.PhotoUrls,
-	)
+func (b *BlogRepository) GetBlogBySlug(userId uuid.UUID, slug string) (*model.BlogResponse, error) {
+	blogDataStat, err := b.getBlogWithStatBySlug(userId, slug)
 
 	if err != nil {
 		return nil, err
 	}
 
+	// author details
+	authorData, err := b.getAuthorData(userId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	comments, err := b.getBlogComments(blogDataStat.Id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	blog := model.BlogResponse{
+		BlogWithStat: *blogDataStat,
+		Comments:     comments,
+		AuthorName:   authorData.FullName,
+		AuthorBio:    authorData.Bio,
+		AuthorAvatar: authorData.Avatar,
+	}
+
 	return &blog, nil
 }
 
-// get blog by slug
+// get blog by title
 func (b *BlogRepository) GetBlogByTitle(userId uuid.UUID, title string) error {
 	query := `SELECT * FROM blogs  WHERE user_id=$1 AND title=$2`
 	_, err := b.DB.Exec(query, userId, title)
@@ -185,29 +223,45 @@ func (b *BlogRepository) GetBlogByTitle(userId uuid.UUID, title string) error {
 }
 
 // get blog by id
-func (b *BlogRepository) GetBlogById(userId uuid.UUID, blogId int64) (*model.BlogDetails, error) {
-	var blog model.BlogDetails
+func (b *BlogRepository) GetBlogById(userId uuid.UUID, blogId int64) (*model.BlogResponse, error) {
+	var blog model.Blog
 
-	query := `SELECT b.id, b.title, b.user_id, b.slug, b.content, b.created_at, b.updated_at, 
-	COALESCE(array_agg(bp.photo_url) FILTER (WHERE bp.photo_url IS NOT NULL), '{}')
-		 FROM blogs b LEFT JOIN blog_photos bp ON b.id = bp.blog_id WHERE b.user_id=$1 AND b.id=$2 GROUP BY b.id`
-
-	err := b.DB.QueryRow(query, userId, blogId).Scan(
-		&blog.Id,
-		&blog.Title,
-		&blog.UserId,
-		&blog.Slug,
-		&blog.Content,
-		&blog.CreatedAt,
-		&blog.UpdatedAt,
-		&blog.PhotoUrls,
+	err := b.DB.QueryRow("SELECT * FROM blogs WHERE id = $1", blogId).Scan(
+		&blog.Id, &blog.UserId, &blog.Title, &blog.Slug, &blog.Content, &blog.Visibility,
+		&blog.CreatedAt, &blog.UpdatedAt,
 	)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &blog, nil
+	blogData, err := b.getBlogWithStatBySlug(userId, blog.Slug)
+
+	if err != nil {
+		return nil, err
+	}
+
+	authorData, err := b.getAuthorData(userId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	comments, err := b.getBlogComments(blogData.Id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	blogRes := model.BlogResponse{
+		BlogWithStat: *blogData,
+		Comments:     comments,
+		AuthorName:   authorData.FullName,
+		AuthorBio:    authorData.Bio,
+		AuthorAvatar: authorData.Avatar,
+	}
+
+	return &blogRes, nil
 }
 
 func (b *BlogRepository) GetPhotoUrls(blogId int64) ([]string, error) {
@@ -230,4 +284,105 @@ func (b *BlogRepository) GetPhotoUrls(blogId int64) ([]string, error) {
 	}
 
 	return photoUrls, nil
+}
+
+func (b *BlogRepository) getBlogWithStatBySlug(userId uuid.UUID, slug string) (*model.BlogWithStat, error) {
+	var blogData model.BlogWithStat
+
+	blogQuery := `
+		SELECT 
+			b.id,
+			b.title, 
+			b.user_id,
+			b.slug,
+			b.content,
+			b.visibility,
+			b.created_at,
+			b.updated_at, 
+			COALESCE(array_agg(bp.photo_url) FILTER (WHERE bp.photo_url IS NOT NULL), '{}') AS photo_urls,
+			COUNT(l.*) FILTER (WHERE l.like_type = 'like') AS likes_count,
+			COUNT(l.*) FILTER (WHERE l.like_type = 'dislike') AS dislikes_count
+
+		FROM blogs b
+		LEFT JOIN blog_photos bp ON b.id = bp.blog_id
+		LEFT JOIN likes l ON b.id = l.blog_id
+		WHERE b.user_id = $1 AND b.slug = $2
+		GROUP BY b.id
+	 `
+
+	err := b.DB.QueryRow(blogQuery, userId, slug).Scan(
+		&blogData.Id, &blogData.Title, &blogData.UserId, &blogData.Slug, &blogData.Content, &blogData.Visibility,
+		&blogData.CreatedAt, &blogData.UpdatedAt, &blogData.PhotoUrls, &blogData.LikeCount, &blogData.DislikeCount,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &blogData, nil
+}
+
+func (b *BlogRepository) getAuthorData(userId uuid.UUID) (*authorData, error) {
+	var authorData authorData
+
+	authorQuery := `
+		SELECT full_name, bio, avatar_url FROM user_profiles WHERE user_id = $1
+	`
+
+	err := b.DB.QueryRow(authorQuery, userId).Scan(
+		&authorData.FullName, &authorData.Bio, &authorData.Avatar,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &authorData, nil
+}
+
+func (b *BlogRepository) getBlogComments(blogId int64) ([]model.CommentWithStat, error) {
+	var comments []model.CommentWithStat
+
+	commentQuery := `
+		SELECT 
+			c.id,
+			c.content,
+			c.user_id,
+			c.parent_id,
+			c.created_at,
+			c.updated_at,
+			COUNT(l.*) FILTER (WHERE l.like_type = 'like') AS likes_count,
+			COUNT(l.*) FILTER (WHERE l.like_type = 'dislike') AS dislikes_count
+
+		FROM comments c
+		LEFT JOIN likes l ON c.id = l.comment_id
+		WHERE c.blog_id = $1
+		GROUP BY c.id
+		ORDER BY c.created_at ASC
+	`
+
+	commentRows, err := b.DB.Query(commentQuery, blogId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer commentRows.Close()
+
+	for commentRows.Next() {
+		var comment model.CommentWithStat
+
+		err := commentRows.Scan(
+			&comment.Id, &comment.Content, &comment.UserId, &comment.ParentId,
+			&comment.CreatedAt, &comment.UpdatedAt, &comment.LikeCount, &comment.DislikeCount,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		comments = append(comments, comment)
+	}
+
+	return comments, err
 }

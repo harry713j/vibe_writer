@@ -119,7 +119,7 @@ func (h *BlogHandler) HandleGetAllBlog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.RespondWithJSON(w, http.StatusOK, map[string][]*model.BlogDetails{"blogs": blogDatas})
+	utils.RespondWithJSON(w, http.StatusOK, map[string][]model.BlogSummary{"blogs": blogDatas})
 }
 
 func (h *BlogHandler) HandleGetBlog(w http.ResponseWriter, r *http.Request) {
@@ -132,7 +132,7 @@ func (h *BlogHandler) HandleGetBlog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	BlogData, err := h.blogService.GetBlog(username, slug)
+	blogRes, err := h.blogService.GetBlog(username, slug)
 
 	if err != nil {
 		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrBlogNotExists) {
@@ -144,7 +144,7 @@ func (h *BlogHandler) HandleGetBlog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.RespondWithJSON(w, http.StatusOK, BlogData)
+	utils.RespondWithJSON(w, http.StatusOK, blogRes)
 }
 
 func (h *BlogHandler) HandleDeleteBlog(w http.ResponseWriter, r *http.Request) {

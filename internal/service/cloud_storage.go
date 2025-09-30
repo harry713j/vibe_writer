@@ -44,16 +44,11 @@ func DeleteFromCloud(imgUrl string) error {
 
 	fileName := filepath.Base(imgUrl)
 	publicId := strings.TrimSuffix(fileName, filepath.Ext(fileName))
-	log.Printf("imgUrl: %v , fileName: %v\n", imgUrl, publicId)
 	ctx := context.Background()
 
-	resp, err := cloud.Upload.Destroy(ctx, uploader.DestroyParams{PublicID: publicId, ResourceType: "image"})
-
-	if err != nil {
+	if _, err := cloud.Upload.Destroy(ctx, uploader.DestroyParams{PublicID: publicId, ResourceType: "image"}); err != nil {
 		return err
 	}
-
-	log.Println("Cloudinary delete Response: ", resp) // Will Delete later, this line
 
 	return nil
 }
