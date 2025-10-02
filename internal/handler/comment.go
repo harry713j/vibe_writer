@@ -107,5 +107,5 @@ func (h *CommentHandler) HandleGetAllComments(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	utils.RespondWithJSON(w, http.StatusOK, map[string][]*model.Comment{"comments": comments})
+	utils.RespondWithJSON(w, http.StatusOK, map[string][]model.Comment{"comments": comments})
 }

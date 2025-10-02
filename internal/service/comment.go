@@ -71,7 +71,7 @@ func (s *CommentService) DeleteComment(userId uuid.UUID, commentId int64) error 
 	return nil
 }
 
-func (s *CommentService) GetAllCommentsOfBlog(username, slug string) ([]*model.Comment, error) {
+func (s *CommentService) GetAllCommentsOfBlog(username, slug string) ([]model.Comment, error) {
 	user, err := s.userRepo.GetUserByUsername(username)
 
 	if err != nil {

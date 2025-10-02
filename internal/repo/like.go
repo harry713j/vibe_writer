@@ -25,7 +25,10 @@ func (r *LikeRepository) UpsertCommentLike(userId uuid.UUID, commentId int64, li
 		like_type = EXCLUDED.like_type,
 		updated_at = CURRENT_TIMESTAMP
 		  RETURNNING *`,
-		userId, commentId, liketype).Scan(&like)
+		userId, commentId, liketype).Scan(
+		&like.Id, &like.UserId, &like.BlogId, &like.CommentId, &like.LikeType,
+		&like.CreatedAt, &like.UpdatedAt,
+	)
 
 	if err != nil {
 		return nil, err
@@ -43,7 +46,10 @@ func (r *LikeRepository) UpsertBlogLike(userId uuid.UUID, blogId int64, liketype
 			like_type = EXCLUDED.like_type,
 			updated_at = CURRENT_TIMESTAMP
 			RETURNNING *`,
-		userId, blogId, liketype).Scan(&like)
+		userId, blogId, liketype).Scan(
+		&like.Id, &like.UserId, &like.BlogId, &like.CommentId, &like.LikeType,
+		&like.CreatedAt, &like.UpdatedAt,
+	)
 
 	if err != nil {
 		return nil, err

@@ -24,9 +24,12 @@ func (c *CommentRepository) CreateComment(userId uuid.UUID, blogId int64, parent
 
 	if parentId != 0 {
 		query = `INSERT INTO comments(user_id, blog_id, parent_id, content) 
-			VALUES($1, $2, $3, $4) RETURNING id`
+			VALUES($1, $2, $3, $4) RETURNING *`
 
-		err := c.DB.QueryRow(query, userId, blogId, parentId, content).Scan(&comment)
+		err := c.DB.QueryRow(query, userId, blogId, parentId, content).Scan(
+			&comment.Id, &comment.UserId, &comment.BlogId, &comment.ParentId, &comment.Content,
+			&comment.CreatedAt, &comment.UpdatedAt,
+		)
 
 		if err != nil {
 			return nil, err
@@ -35,9 +38,12 @@ func (c *CommentRepository) CreateComment(userId uuid.UUID, blogId int64, parent
 		return &comment, nil
 	} else {
 		query = `INSERT INTO comments(user_id, blog_id, content) 
-			VALUES($1, $2, $3) RETURNNING id`
+			VALUES($1, $2, $3) RETURNNING *`
 
-		err := c.DB.QueryRow(query, userId, blogId, content).Scan(&comment)
+		err := c.DB.QueryRow(query, userId, blogId, content).Scan(
+			&comment.Id, &comment.UserId, &comment.BlogId, &comment.ParentId, &comment.Content,
+			&comment.CreatedAt, &comment.UpdatedAt,
+		)
 
 		if err != nil {
 			return nil, err
@@ -51,7 +57,10 @@ func (c *CommentRepository) CreateComment(userId uuid.UUID, blogId int64, parent
 func (c *CommentRepository) GetCommentById(userId uuid.UUID, id int64) (*model.Comment, error) {
 	var comment model.Comment
 
-	err := c.DB.QueryRow("SELECT * FROM comments WHERE user_id=$1 AND blog_id=$2", userId, id).Scan(&comment)
+	err := c.DB.QueryRow("SELECT * FROM comments WHERE user_id=$1 AND blog_id=$2", userId, id).Scan(
+		&comment.Id, &comment.UserId, &comment.BlogId, &comment.ParentId, &comment.Content,
+		&comment.CreatedAt, &comment.UpdatedAt,
+	)
 
 	if err != nil {
 		return nil, err
@@ -63,7 +72,10 @@ func (c *CommentRepository) GetCommentById(userId uuid.UUID, id int64) (*model.C
 func (c *CommentRepository) GetComment(id int64) (*model.Comment, error) {
 	var comment model.Comment
 
-	err := c.DB.QueryRow("SELECT * FROM comments WHERE AND blog_id=$2", id).Scan(&comment)
+	err := c.DB.QueryRow("SELECT * FROM comments WHERE AND blog_id=$2", id).Scan(
+		&comment.Id, &comment.UserId, &comment.BlogId, &comment.ParentId, &comment.Content,
+		&comment.CreatedAt, &comment.UpdatedAt,
+	)
 
 	if err != nil {
 		return nil, err
@@ -73,8 +85,8 @@ func (c *CommentRepository) GetComment(id int64) (*model.Comment, error) {
 }
 
 // Get comments of a blog
-func (c *CommentRepository) GetCommentsByBlogId(blogId int64) ([]*model.Comment, error) {
-	var comments []*model.Comment
+func (c *CommentRepository) GetCommentsByBlogId(blogId int64) ([]model.Comment, error) {
+	var comments []model.Comment
 
 	rows, err := c.DB.Query("SELECT * FROM comments WHERE blog_id=$1", blogId)
 
@@ -85,9 +97,12 @@ func (c *CommentRepository) GetCommentsByBlogId(blogId int64) ([]*model.Comment,
 	defer rows.Close()
 
 	for rows.Next() {
-		comment := &model.Comment{}
+		comment := model.Comment{}
 
-		err := rows.Scan(comment)
+		err := rows.Scan(
+			&comment.Id, &comment.UserId, &comment.BlogId, &comment.ParentId, &comment.Content,
+			&comment.CreatedAt, &comment.UpdatedAt,
+		)
 
 		if err != nil {
 			return nil, err
