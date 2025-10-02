@@ -16,4 +16,6 @@ type App struct {
 	CommentHandler     *handler.CommentHandler
 	LikeService        *service.LikeService
 	LikeHandler        *handler.LikeHandler
+	UploadService      *service.UploadService
+	UploadHandler      *handler.UploadHandler
 }

@@ -7,13 +7,14 @@ import (
 	"github.com/harry713j/vibe_writer/internal/handler"
 )
 
-func UserProfileRoute(h *handler.UserProfileHandler, auth func(http.Handler) http.Handler) chi.Router {
+func UserProfileRoutes(h *handler.UserProfileHandler, auth func(http.Handler) http.Handler) chi.Router {
 	r := chi.NewRouter()
 	r.Use(auth)
 
 	r.Patch("/profile", h.HandleUpdateProfile)
 	r.Patch("/avatar", h.HandleUpdateAvatar)
-	r.Get("/me", h.HandleGetUserDetails)
+	r.Get("/me", h.HandleGetOwnDetails)
+	r.Get("/{username}", h.HandleGetUserDetails)
 
 	return r
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/harry713j/vibe_writer/internal/middleware"
 	"github.com/harry713j/vibe_writer/internal/service"
 	"github.com/harry713j/vibe_writer/internal/utils"
@@ -96,7 +97,7 @@ func (u *UserProfileHandler) HandleUpdateAvatar(w http.ResponseWriter, r *http.R
 }
 
 // get user details
-func (u *UserProfileHandler) HandleGetUserDetails(w http.ResponseWriter, r *http.Request) {
+func (u *UserProfileHandler) HandleGetOwnDetails(w http.ResponseWriter, r *http.Request) {
 	userId, ok := middleware.GetUserID(r)
 
 	if !ok {
@@ -104,7 +105,37 @@ func (u *UserProfileHandler) HandleGetUserDetails(w http.ResponseWriter, r *http
 		return
 	}
 
-	userDetails, err := u.profileService.GetUserDetails(userId)
+	userDetails, err := u.profileService.GetProfileDetails(userId)
+
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, userDetails)
+}
+
+func (u *UserProfileHandler) HandleGetUserDetails(w http.ResponseWriter, r *http.Request) {
+	_, ok := middleware.GetUserID(r)
+
+	if !ok {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	username := chi.URLParam(r, "username")
+
+	if username == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid username")
+		return
+	}
+
+	userDetails, err := u.profileService.GetUserDetails(username)
 
 	if err != nil {
 		if errors.Is(err, service.ErrUserNotExists) {

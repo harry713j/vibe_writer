@@ -69,12 +69,28 @@ func (p *UserProfileService) UpdateAvatar(userId uuid.UUID, avatarUrl string) (*
 	return userData, nil
 }
 
-func (p *UserProfileService) GetUserDetails(userId uuid.UUID) (*model.UserDetails, error) {
+func (p *UserProfileService) GetProfileDetails(userId uuid.UUID) (*model.UserDetails, error) {
 	if _, err := p.userRepo.GetUserById(userId); err != nil {
 		return nil, ErrUserNotExists
 	}
 
 	userData, err := p.profileRepo.GetUserDetails(userId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return userData, nil
+}
+
+func (p *UserProfileService) GetUserDetails(username string) (*model.UserDetails, error) {
+	user, err := p.userRepo.GetUserByUsername(username)
+
+	if err != nil {
+		return nil, ErrUserNotExists
+	}
+
+	userData, err := p.profileRepo.GetUserDetails(user.Id)
 
 	if err != nil {
 		return nil, err

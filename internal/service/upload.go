@@ -11,17 +11,23 @@ import (
 	"github.com/google/uuid"
 )
 
+type UploadService struct{}
+
 var (
-	ErrImageNotAllowed = errors.New("this image not allowed")
+	ErrImageNotAllowed = errors.New("image type not allowed")
 )
 
+func NewUploadService() *UploadService {
+	return &UploadService{}
+}
+
 // for cloud upload
-func Upload(fileData multipart.File, fileName string) (string, error) {
+func (s *UploadService) Upload(fileData multipart.File, fileName string) (string, error) {
 	// create the file in the server
 	ext := filepath.Ext(fileName)
 
 	if ext == "" {
-		ext = ".png" // fallback
+		ext = ".png"
 	}
 
 	switch strings.ToLower(ext) {
@@ -59,11 +65,11 @@ func Upload(fileData multipart.File, fileName string) (string, error) {
 	}
 
 	// remove from the server
-	go removeImage(safePath)
+	go s.removeImage(safePath)
 
 	return imgUrl, nil
 }
 
-func removeImage(fileName string) error {
+func (s *UploadService) removeImage(fileName string) error {
 	return os.Remove(fileName)
 }

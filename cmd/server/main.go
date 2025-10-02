@@ -48,6 +48,7 @@ func main() {
 	blogService := service.NewBlogService(blogRepo, userRepo)
 	commentService := service.NewCommentService(commentRepo, blogRepo, userRepo)
 	likeService := service.NewLikeService(likeRepo, userRepo, blogRepo, commentRepo)
+	uploadService := service.NewUploadService()
 
 	app := &app.App{
 		AuthService:        authService,
@@ -55,12 +56,14 @@ func main() {
 		BlogService:        blogService,
 		CommentService:     commentService,
 		LikeService:        likeService,
+		UploadService:      uploadService,
 
 		AuthHandler:        handler.NewAuthHandler(authService),
 		UserProfileHandler: handler.NewUserProfileHandler(userProfileService),
 		BlogHandler:        handler.NewBlogHandler(blogService),
 		CommentHandler:     handler.NewCommentHandler(commentService),
 		LikeHandler:        handler.NewLikeHandler(likeService),
+		UploadHandler:      handler.NewUploadHandler(uploadService),
 	}
 
 	srv := server.NewServer(serverConfig, app)
