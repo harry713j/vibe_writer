@@ -113,7 +113,17 @@ func (b *BlogRepository) DeleteBlogPhoto(blogId int64, photoUrl string) error {
 }
 
 // get all the blogs of an user
-func (b *BlogRepository) GetAllBlog(userId uuid.UUID) ([]model.BlogSummary, error) {
+func (b *BlogRepository) GetAllBlog(userId uuid.UUID, page, limit int) (*model.PaginatedResponse[model.BlogSummary], error) {
+	if page < 1 {
+		page = 1
+	}
+
+	if limit <= 0 {
+		limit = 10
+	}
+
+	offset := (page - 1) * limit
+
 	var blogs []model.BlogSummary
 	query := `
 		SELECT 
@@ -140,9 +150,11 @@ func (b *BlogRepository) GetAllBlog(userId uuid.UUID) ([]model.BlogSummary, erro
 		LEFT JOIN comments c ON c.blog_id = b.id
 		WHERE b.user_id = $1
 		GROUP BY b.id, b.title, b.slug, b.content, b.user_id, b.created_at, b.updated_at
-		ORDER BY b.created_at DESC`
+		ORDER BY b.created_at DESC
+		LIMIT $2 OFFSET $3
+		`
 
-	rows, err := b.DB.Query(query, userId)
+	rows, err := b.DB.Query(query, userId, limit, offset)
 
 	if err != nil {
 		return nil, err
@@ -175,7 +187,25 @@ func (b *BlogRepository) GetAllBlog(userId uuid.UUID) ([]model.BlogSummary, erro
 		blogs = append(blogs, blog)
 	}
 
-	return blogs, nil
+	// total blogs
+	var total int
+	err = b.DB.QueryRow("SELECT COUNT(*) FROM blogs WHERE blogs.user_id = $1", userId).Scan(&total)
+
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := (total + limit - 1) / limit
+
+	return &model.PaginatedResponse[model.BlogSummary]{
+		Data: blogs,
+		Meta: model.PageMeta{
+			Total: total,
+			Page:  page,
+			Limit: limit,
+			Pages: totalPages,
+		},
+	}, nil
 }
 
 // get blog by slug

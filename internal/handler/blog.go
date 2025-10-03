@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/harry713j/vibe_writer/internal/middleware"
-	"github.com/harry713j/vibe_writer/internal/model"
 	"github.com/harry713j/vibe_writer/internal/service"
 	"github.com/harry713j/vibe_writer/internal/utils"
 )
@@ -102,49 +101,6 @@ func (h *BlogHandler) HandleUpdateBlog(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.RespondWithJSON(w, http.StatusOK, updatedBlogData)
-}
-
-func (h *BlogHandler) HandleGetAllBlog(w http.ResponseWriter, r *http.Request) {
-	userId, ok := middleware.GetUserID(r)
-
-	if !ok {
-		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
-		return
-	}
-
-	blogDatas, err := h.blogService.GetAllUserBlog(userId)
-
-	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
-		return
-	}
-
-	utils.RespondWithJSON(w, http.StatusOK, map[string][]model.BlogSummary{"blogs": blogDatas})
-}
-
-func (h *BlogHandler) HandleGetBlog(w http.ResponseWriter, r *http.Request) {
-
-	// extract it from parameter
-	slug := chi.URLParam(r, "slug")
-	username := chi.URLParam(r, "username")
-	if slug == "" || username == "" {
-		utils.RespondWithError(w, http.StatusBadRequest, "Blog parameter required")
-		return
-	}
-
-	blogRes, err := h.blogService.GetBlog(username, slug)
-
-	if err != nil {
-		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrBlogNotExists) {
-			utils.RespondWithError(w, http.StatusNotFound, err.Error())
-			return
-		}
-
-		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
-		return
-	}
-
-	utils.RespondWithJSON(w, http.StatusOK, blogRes)
 }
 
 func (h *BlogHandler) HandleDeleteBlog(w http.ResponseWriter, r *http.Request) {

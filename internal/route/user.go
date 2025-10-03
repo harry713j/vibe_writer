@@ -9,12 +9,16 @@ import (
 
 func UserProfileRoutes(h *handler.UserProfileHandler, auth func(http.Handler) http.Handler) chi.Router {
 	r := chi.NewRouter()
-	r.Use(auth)
 
-	r.Patch("/profile", h.HandleUpdateProfile)
-	r.Patch("/avatar", h.HandleUpdateAvatar)
-	r.Get("/me", h.HandleGetOwnDetails)
+	r.Group(func(r chi.Router) {
+		r.Use(auth)
+		r.Patch("/profile", h.HandleUpdateProfile)
+		r.Patch("/avatar", h.HandleUpdateAvatar)
+		r.Get("/me", h.HandleGetOwnDetails)
+	})
 	r.Get("/{username}", h.HandleGetUserDetails)
+	r.Get("/{username}/blogs", h.HandleGetAllBlog)
+	r.Get("/{username}/blogs/{slug}", h.HandleGetBlog)
 
 	return r
 }

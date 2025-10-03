@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/harry713j/vibe_writer/internal/middleware"
@@ -13,11 +14,13 @@ import (
 
 type UserProfileHandler struct {
 	profileService *service.UserProfileService
+	blogService    *service.BlogService
 }
 
-func NewUserProfileHandler(service *service.UserProfileService) *UserProfileHandler {
+func NewUserProfileHandler(profileService *service.UserProfileService, blogService *service.BlogService) *UserProfileHandler {
 	return &UserProfileHandler{
-		profileService: service,
+		profileService: profileService,
+		blogService:    blogService,
 	}
 }
 
@@ -121,12 +124,6 @@ func (u *UserProfileHandler) HandleGetOwnDetails(w http.ResponseWriter, r *http.
 }
 
 func (u *UserProfileHandler) HandleGetUserDetails(w http.ResponseWriter, r *http.Request) {
-	_, ok := middleware.GetUserID(r)
-
-	if !ok {
-		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
-		return
-	}
 
 	username := chi.URLParam(r, "username")
 
@@ -148,4 +145,62 @@ func (u *UserProfileHandler) HandleGetUserDetails(w http.ResponseWriter, r *http
 	}
 
 	utils.RespondWithJSON(w, http.StatusOK, userDetails)
+}
+
+// shift bottom two functions to user handler
+func (u *UserProfileHandler) HandleGetAllBlog(w http.ResponseWriter, r *http.Request) {
+	username := chi.URLParam(r, "username")
+
+	if username == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Inavlid params")
+		return
+	}
+	// extracr query parameters
+	page, err := strconv.Atoi(r.URL.Query().Get("page"))
+
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid query value")
+		return
+	}
+
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid query value")
+		return
+	}
+
+	paginatedBlogRes, err := u.blogService.GetAllUserBlog(username, page, limit)
+
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, paginatedBlogRes)
+}
+
+func (u *UserProfileHandler) HandleGetBlog(w http.ResponseWriter, r *http.Request) {
+
+	// extract it from parameter
+	slug := chi.URLParam(r, "slug")
+	username := chi.URLParam(r, "username")
+	if slug == "" || username == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Blog parameter required")
+		return
+	}
+
+	blogRes, err := u.blogService.GetBlog(username, slug)
+
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrBlogNotExists) {
+			utils.RespondWithError(w, http.StatusNotFound, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, blogRes)
 }

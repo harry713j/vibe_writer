@@ -115,8 +115,14 @@ func (r *BlogService) UpdateBlog(userId uuid.UUID, slug, title, content string, 
 	return blog, err
 }
 
-func (r *BlogService) GetAllUserBlog(userId uuid.UUID) ([]model.BlogSummary, error) {
-	blogs, err := r.blogRepo.GetAllBlog(userId)
+func (r *BlogService) GetAllUserBlog(username string, page, limit int) (*model.PaginatedResponse[model.BlogSummary], error) {
+	user, err := r.userRepo.GetUserByUsername(username)
+
+	if err != nil {
+		return nil, ErrUserNotExists
+	}
+
+	blogs, err := r.blogRepo.GetAllBlog(user.Id, page, limit)
 
 	if err != nil {
 		return nil, err

@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS blogs(
     id BIGSERIAL PRIMARY KEY,
     title TEXT NOT NULL,
-    slug TEXT NOT NULL UNIQUE,
+    slug TEXT NOT NULL,
     content TEXT NOT NULL,
     visibility BOOLEAN DEFAULT true,
     user_id UUID NOT NULL,
@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS blogs(
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_user
-    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT unique_user_slug UNIQUE(user_id, slug)
 );
 
 CREATE TABLE IF NOT EXISTS blog_photos(

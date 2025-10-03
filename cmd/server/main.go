@@ -50,6 +50,8 @@ func main() {
 	likeService := service.NewLikeService(likeRepo, userRepo, blogRepo, commentRepo)
 	uploadService := service.NewUploadService()
 
+	userProfileHandler := handler.NewUserProfileHandler(userProfileService, blogService)
+
 	app := &app.App{
 		AuthService:        authService,
 		UserProfileService: userProfileService,
@@ -59,7 +61,7 @@ func main() {
 		UploadService:      uploadService,
 
 		AuthHandler:        handler.NewAuthHandler(authService),
-		UserProfileHandler: handler.NewUserProfileHandler(userProfileService),
+		UserProfileHandler: userProfileHandler,
 		BlogHandler:        handler.NewBlogHandler(blogService),
 		CommentHandler:     handler.NewCommentHandler(commentService),
 		LikeHandler:        handler.NewLikeHandler(likeService),

@@ -10,8 +10,6 @@ import (
 func BlogRoutes(h *handler.BlogHandler, auth func(http.Handler) http.Handler) chi.Router {
 	r := chi.NewRouter()
 
-	r.Get("/{username}/{slug}", h.HandleGetBlog)
-
 	r.Group(func(r chi.Router) {
 		r.Use(auth)
 

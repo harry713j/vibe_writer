@@ -46,3 +46,15 @@ type BlogResponse struct {
 	AuthorBio    string            `json:"author_bio"`
 	AuthorAvatar string            `json:"author_avatar"`
 }
+
+type PageMeta struct {
+	Total int `json:"total"`
+	Page  int `json:"page"`
+	Limit int `json:"limit"`
+	Pages int `json:"pages"`
+}
+
+type PaginatedResponse[T any] struct {
+	Data []T      `json:"data"`
+	Meta PageMeta `json:"meta"`
+}
