@@ -17,48 +17,14 @@ type CommentHandler struct {
 	service *service.CommentService
 }
 
-type createCommentRequest struct {
-	Slug     string `json:"slug"` // slug of the blog
-	Content  string `json:"content"`
-	ParentId int64  `json:"parent_id"` // could not be present
-}
-
 func NewCommentHandler(commentService *service.CommentService) *CommentHandler {
 	return &CommentHandler{
 		service: commentService,
 	}
 }
 
-func (h *CommentHandler) HandleCreateComment(w http.ResponseWriter, r *http.Request) {
-	userid, ok := middleware.GetUserID(r)
-
-	if !ok {
-		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
-		return
-	}
-
-	var req createCommentRequest
-
-	err := json.NewDecoder(r.Body).Decode(&req)
-
-	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Provide a valid json")
-		return
-	}
-
-	comment, err := h.service.CreateComment(userid, req.Slug, req.ParentId, req.Content)
-
-	if err != nil {
-		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrBlogNotExists) ||
-			errors.Is(err, service.ErrInvalidCommentContent) {
-			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
-		}
-
-		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
-		return
-	}
-
-	utils.RespondWithJSON(w, http.StatusCreated, comment)
+type toggleCommentLikeRequest struct {
+	LikeType model.LikeType `json:"like_type"`
 }
 
 func (h *CommentHandler) HandleDeleteComment(w http.ResponseWriter, r *http.Request) {
@@ -87,18 +53,33 @@ func (h *CommentHandler) HandleDeleteComment(w http.ResponseWriter, r *http.Requ
 	utils.RespondWithJSON(w, http.StatusOK, map[string]string{"message": "comment deleted successfully"})
 }
 
-func (h *CommentHandler) HandleGetAllComments(w http.ResponseWriter, r *http.Request) {
-	slug := chi.URLParam(r, "slug")
-	username := chi.URLParam(r, "username")
-	if slug == "" || username == "" {
-		utils.RespondWithError(w, http.StatusBadRequest, "Blog parameter required")
+func (h *CommentHandler) HandleToggleCommentLike(w http.ResponseWriter, r *http.Request) {
+	userId, ok := middleware.GetUserID(r)
+
+	if !ok {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	comments, err := h.service.GetAllCommentsOfBlog(username, slug)
+	commentId, err := strconv.ParseInt(chi.URLParam(r, "commentId"), 10, 64)
 
 	if err != nil {
-		if errors.Is(err, service.ErrBlogNotExists) {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid param")
+		return
+	}
+
+	var req toggleCommentLikeRequest
+	err = json.NewDecoder(r.Body).Decode(&req)
+
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+
+	like, err := h.service.ToggleCommentLike(userId, commentId, req.LikeType)
+
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrCommentNotExists) {
 			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -107,5 +88,40 @@ func (h *CommentHandler) HandleGetAllComments(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	utils.RespondWithJSON(w, http.StatusOK, map[string][]model.Comment{"comments": comments})
+	utils.RespondWithJSON(w, http.StatusCreated, like)
+}
+
+func (h *CommentHandler) HandleRemoveCommentLike(w http.ResponseWriter, r *http.Request) {
+	userId, ok := middleware.GetUserID(r)
+
+	if !ok {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	commentId, err := strconv.ParseInt(chi.URLParam(r, "commentId"), 10, 64)
+
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid param")
+		return
+	}
+
+	if commentId == 0 {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid data provided")
+		return
+	}
+
+	err = h.service.RemoveCommentLike(userId, int64(commentId))
+
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrCommentNotExists) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusNoContent, "")
 }

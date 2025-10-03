@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/harry713j/vibe_writer/internal/middleware"
+	"github.com/harry713j/vibe_writer/internal/model"
 	"github.com/harry713j/vibe_writer/internal/service"
 	"github.com/harry713j/vibe_writer/internal/utils"
 )
@@ -33,6 +34,15 @@ type updateBlogRequest struct {
 	Title     string   `json:"title"`
 	Content   string   `json:"content"`
 	PhotoUrls []string `json:"photo_urls"`
+}
+
+type createCommentRequest struct {
+	Content  string `json:"content"`
+	ParentId int64  `json:"parent_id"` // could not be present
+}
+
+type toggleBlogLikeRequest struct {
+	LikeType model.LikeType `json:"like_type"`
 }
 
 func (h *BlogHandler) HandleCreateBlog(w http.ResponseWriter, r *http.Request) {
@@ -199,4 +209,111 @@ func (h *BlogHandler) HandleChangeBlogVisibility(w http.ResponseWriter, r *http.
 	}
 
 	utils.RespondWithJSON(w, http.StatusOK, blog)
+}
+
+func (h *BlogHandler) HandleCreateComment(w http.ResponseWriter, r *http.Request) {
+	userid, ok := middleware.GetUserID(r)
+
+	if !ok {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	slug := chi.URLParam(r, "slug")
+
+	if slug == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid params")
+		return
+	}
+
+	var req createCommentRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Provide a valid json")
+		return
+	}
+
+	comment, err := h.blogService.CreateComment(userid, slug, req.ParentId, req.Content)
+
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrBlogNotExists) ||
+			errors.Is(err, service.ErrInvalidCommentContent) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusCreated, comment)
+}
+
+func (h *BlogHandler) HandleToggleBlogLike(w http.ResponseWriter, r *http.Request) {
+	userId, ok := middleware.GetUserID(r)
+
+	if !ok {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	slug := chi.URLParam(r, "slug")
+
+	if slug == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid params")
+		return
+	}
+
+	var req toggleBlogLikeRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+
+	like, err := h.blogService.ToggleBlogLike(userId, slug, req.LikeType)
+
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrBlogNotExists) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusCreated, like)
+}
+
+func (h *BlogHandler) HandleRemoveBlogLike(w http.ResponseWriter, r *http.Request) {
+	userId, ok := middleware.GetUserID(r)
+
+	if !ok {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	slug := chi.URLParam(r, "slug")
+
+	if slug == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid data provided")
+		return
+	}
+
+	err := h.blogService.RemoveBlogLike(userId, slug)
+
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrBlogNotExists) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusNoContent, "")
 }

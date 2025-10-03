@@ -15,10 +15,12 @@ func UserProfileRoutes(h *handler.UserProfileHandler, auth func(http.Handler) ht
 		r.Patch("/profile", h.HandleUpdateProfile)
 		r.Patch("/avatar", h.HandleUpdateAvatar)
 		r.Get("/me", h.HandleGetOwnDetails)
+		r.Delete("/avatar", h.HandleRemoveAvatar)
 	})
 	r.Get("/{username}", h.HandleGetUserDetails)
 	r.Get("/{username}/blogs", h.HandleGetAllBlog)
 	r.Get("/{username}/blogs/{slug}", h.HandleGetBlog)
+	r.Get("/{username}/blogs/{slug}/comments", h.HandleGetAllComments)
 
 	return r
 }

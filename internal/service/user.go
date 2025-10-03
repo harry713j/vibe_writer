@@ -9,12 +9,17 @@ import (
 type UserProfileService struct {
 	userRepo    *repo.UserRepository
 	profileRepo *repo.UserProfileRepository
+	blogRepo    *repo.BlogRepository
+	commentRepo *repo.CommentRepository
 }
 
-func NewUserProfileService(profile *repo.UserProfileRepository, user *repo.UserRepository) *UserProfileService {
+func NewUserProfileService(profile *repo.UserProfileRepository, user *repo.UserRepository,
+	blog *repo.BlogRepository, comment *repo.CommentRepository) *UserProfileService {
 	return &UserProfileService{
 		profileRepo: profile,
 		userRepo:    user,
+		blogRepo:    blog,
+		commentRepo: comment,
 	}
 }
 
@@ -97,4 +102,42 @@ func (p *UserProfileService) GetUserDetails(username string) (*model.UserDetails
 	}
 
 	return userData, nil
+}
+
+func (p *UserProfileService) RemoveAvatar(userId uuid.UUID) error {
+
+	if _, err := p.userRepo.GetUserById(userId); err != nil {
+		return ErrUserNotExists
+	}
+
+	err := p.profileRepo.DeleteAvatarUrl(userId)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *UserProfileService) GetAllCommentsOfBlog(username, slug string) ([]model.CommentWithStat, error) {
+
+	user, err := s.userRepo.GetUserByUsername(username)
+
+	if err != nil {
+		return nil, ErrUserNotExists
+	}
+
+	blog, err := s.blogRepo.GetBlogBySlug(user.Id, slug)
+
+	if err != nil {
+		return nil, ErrBlogNotExists
+	}
+
+	comments, err := s.commentRepo.GetCommentsByBlogId(blog.Id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return comments, nil
 }

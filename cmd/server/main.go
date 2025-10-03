@@ -44,10 +44,9 @@ func main() {
 	likeRepo := repo.NewLikeRepository(db)
 
 	authService := service.NewAuthService(userRepo, profileRepo, refreshTokenRepo, jwtSecret, accessTokenTTL)
-	userProfileService := service.NewUserProfileService(profileRepo, userRepo)
-	blogService := service.NewBlogService(blogRepo, userRepo)
-	commentService := service.NewCommentService(commentRepo, blogRepo, userRepo)
-	likeService := service.NewLikeService(likeRepo, userRepo, blogRepo, commentRepo)
+	userProfileService := service.NewUserProfileService(profileRepo, userRepo, blogRepo, commentRepo)
+	blogService := service.NewBlogService(blogRepo, userRepo, commentRepo, likeRepo)
+	commentService := service.NewCommentService(commentRepo, userRepo, likeRepo)
 	uploadService := service.NewUploadService()
 
 	userProfileHandler := handler.NewUserProfileHandler(userProfileService, blogService)
@@ -57,14 +56,12 @@ func main() {
 		UserProfileService: userProfileService,
 		BlogService:        blogService,
 		CommentService:     commentService,
-		LikeService:        likeService,
 		UploadService:      uploadService,
 
 		AuthHandler:        handler.NewAuthHandler(authService),
 		UserProfileHandler: userProfileHandler,
 		BlogHandler:        handler.NewBlogHandler(blogService),
 		CommentHandler:     handler.NewCommentHandler(commentService),
-		LikeHandler:        handler.NewLikeHandler(likeService),
 		UploadHandler:      handler.NewUploadHandler(uploadService),
 	}
 

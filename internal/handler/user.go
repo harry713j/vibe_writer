@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/harry713j/vibe_writer/internal/middleware"
+	"github.com/harry713j/vibe_writer/internal/model"
 	"github.com/harry713j/vibe_writer/internal/service"
 	"github.com/harry713j/vibe_writer/internal/utils"
 )
@@ -203,4 +204,51 @@ func (u *UserProfileHandler) HandleGetBlog(w http.ResponseWriter, r *http.Reques
 	}
 
 	utils.RespondWithJSON(w, http.StatusOK, blogRes)
+}
+
+func (u *UserProfileHandler) HandleRemoveAvatar(w http.ResponseWriter, r *http.Request) {
+	userId, ok := middleware.GetUserID(r)
+
+	if !ok {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	err := u.profileService.RemoveAvatar(userId)
+
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusNoContent, "")
+}
+
+func (h *UserProfileHandler) HandleGetAllComments(w http.ResponseWriter, r *http.Request) {
+	username := chi.URLParam(r, "username")
+	slug := chi.URLParam(r, "slug")
+
+	if username == "" || slug == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Blog parameter required")
+		return
+	}
+
+	comments, err := h.profileService.GetAllCommentsOfBlog(username, slug)
+
+	if err != nil {
+		if errors.Is(err, service.ErrBlogNotExists) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, map[string][]model.CommentWithStat{"comments": comments})
 }

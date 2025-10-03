@@ -85,3 +85,11 @@ func (u *UserProfileRepository) GetAvatarUrl(userId uuid.UUID) (string, error) {
 
 	return avatarurl, nil
 }
+
+func (u *UserProfileRepository) DeleteAvatarUrl(userId uuid.UUID) error {
+	if _, err := u.DB.Exec("UPDATE user_profiles SET avatar_url=NULL WHERE user_id=$1", userId); err != nil {
+		return err
+	}
+
+	return nil
+}

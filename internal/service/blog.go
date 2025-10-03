@@ -10,8 +10,10 @@ import (
 )
 
 type BlogService struct {
-	blogRepo *repo.BlogRepository
-	userRepo *repo.UserRepository
+	blogRepo    *repo.BlogRepository
+	userRepo    *repo.UserRepository
+	commentRepo *repo.CommentRepository
+	likeRepo    *repo.LikeRepository
 }
 
 var (
@@ -20,10 +22,13 @@ var (
 	ErrUserNotExists = errors.New("user not found")
 )
 
-func NewBlogService(blogRepo *repo.BlogRepository, userRepo *repo.UserRepository) *BlogService {
+func NewBlogService(blogRepo *repo.BlogRepository, userRepo *repo.UserRepository,
+	commentRepo *repo.CommentRepository, likeRepo *repo.LikeRepository) *BlogService {
 	return &BlogService{
-		blogRepo: blogRepo,
-		userRepo: userRepo,
+		blogRepo:    blogRepo,
+		userRepo:    userRepo,
+		commentRepo: commentRepo,
+		likeRepo:    likeRepo,
 	}
 }
 
@@ -211,4 +216,75 @@ func (r *BlogService) differentUrls(a, b []string) []string {
 	}
 
 	return diff
+}
+
+// comment
+func (s *BlogService) CreateComment(userId uuid.UUID, slug string, parentId int64, content string) (*model.CommentWithStat, error) {
+	// check user exists or not
+	if _, err := s.userRepo.GetUserById(userId); err != nil {
+		return nil, ErrUserNotExists
+	}
+	// check blog with blog id exists or not
+	blog, err := s.blogRepo.GetBlogBySlug(userId, slug)
+
+	if err != nil {
+		return nil, ErrBlogNotExists
+	}
+
+	if content == "" {
+		return nil, ErrInvalidCommentContent
+	}
+
+	commentId, err := s.commentRepo.CreateComment(userId, blog.Id, parentId, content)
+
+	if err != nil {
+		return nil, err
+	}
+
+	comment, err := s.commentRepo.GetCommentById(userId, commentId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return comment, nil
+}
+
+// like
+func (s *BlogService) ToggleBlogLike(userId uuid.UUID, slug string, liketype model.LikeType) (*model.Like, error) {
+	if _, err := s.userRepo.GetUserById(userId); err != nil {
+		return nil, ErrUserNotExists
+	}
+
+	blog, err := s.blogRepo.GetBlogBySlug(userId, slug)
+
+	if err != nil {
+		return nil, ErrBlogNotExists
+	}
+
+	if liketype != "like" && liketype != "dislike" {
+		return nil, ErrInvalidLikeType
+	}
+
+	like, err := s.likeRepo.UpsertBlogLike(userId, blog.Id, liketype)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return like, nil
+}
+
+func (s *BlogService) RemoveBlogLike(userId uuid.UUID, slug string) error {
+	if _, err := s.userRepo.GetUserById(userId); err != nil {
+		return ErrUserNotExists
+	}
+
+	blog, err := s.blogRepo.GetBlogBySlug(userId, slug)
+
+	if err != nil {
+		return ErrBlogNotExists
+	}
+
+	return s.likeRepo.DeleteBlogLike(userId, blog.Id)
 }

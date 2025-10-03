@@ -18,6 +18,9 @@ func BlogRoutes(h *handler.BlogHandler, auth func(http.Handler) http.Handler) ch
 		r.Delete("/{slug}", h.HandleDeleteBlog)
 		r.Get("/", h.HandleGetBlogs)
 		r.Patch("/{slug}", h.HandleChangeBlogVisibility)
+		r.Post("/{slug}/comments", h.HandleCreateComment)
+		r.Post("/{slug}/reactions", h.HandleToggleBlogLike)
+		r.Delete("/{slug}/reactions", h.HandleRemoveBlogLike)
 	})
 
 	return r

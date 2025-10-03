@@ -10,12 +10,11 @@ import (
 func CommentRoutes(h *handler.CommentHandler, auth func(http.Handler) http.Handler) chi.Router {
 	r := chi.NewRouter()
 
-	r.Get("/{username}/{slug}", h.HandleGetAllComments)
-
 	r.Group(func(r chi.Router) {
 		r.Use(auth)
-		r.Post("/", h.HandleCreateComment)
 		r.Delete("/{commentId}", h.HandleDeleteComment)
+		r.Post("/{commentId}/reactions", h.HandleToggleCommentLike)
+		r.Delete("/{comment}/reactions", h.HandleRemoveCommentLike)
 	})
 
 	return r
