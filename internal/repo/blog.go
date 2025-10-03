@@ -86,6 +86,14 @@ func (b *BlogRepository) UpdateBlogPhoto(blogId, blogPhotoId int64, photoUrl str
 	return nil
 }
 
+func (b *BlogRepository) UpdateBlogVisibility(userId uuid.UUID, slug string) error {
+	if _, err := b.DB.Exec("UPDATE blogs SET visibility = NOT visibility WHERE user_id = $1 AND slug = $2", userId, slug); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // delete by slug
 func (b *BlogRepository) DeleteBlog(userId uuid.UUID, slug string) error {
 	if _, err := b.DB.Exec("DELETE FROM blogs WHERE slug=$1 AND user_id=$2", slug, userId); err != nil {
@@ -110,6 +118,102 @@ func (b *BlogRepository) DeleteBlogPhoto(blogId int64, photoUrl string) error {
 		return err
 	}
 	return nil
+}
+
+// get all the public blogs of an user
+func (b *BlogRepository) GetAllPublicBlog(userId uuid.UUID, page, limit int) (*model.PaginatedResponse[model.BlogSummary], error) {
+	if page < 1 {
+		page = 1
+	}
+
+	if limit <= 0 {
+		limit = 10
+	}
+
+	offset := (page - 1) * limit
+
+	var blogs []model.BlogSummary
+	query := `
+		SELECT 
+			b.id,
+			b.title,
+			b.slug,
+			b.content,
+			b.visibility,
+			b.user_id,
+			b.created_at,
+			b.updated_at,
+			COALESCE((
+				SELECT bp.photo_url 
+				FROM blog_photos bp 
+				WHERE bp.blog_id = b.id 
+				ORDER BY bp.id ASC 
+				LIMIT 1
+			), '') AS blog_thumbnail,
+			COUNT(l.*) FILTER (WHERE l.like_type = 'like')    AS likes_count,
+			COUNT(l.*) FILTER (WHERE l.like_type = 'dislike') AS dislikes_count,
+			COUNT(DISTINCT c.id) AS comments_count
+		FROM blogs b
+		LEFT JOIN likes l ON l.blog_id = b.id
+		LEFT JOIN comments c ON c.blog_id = b.id
+		WHERE b.user_id = $1 AND b.visibility = true
+		GROUP BY b.id, b.title, b.slug, b.content, b.user_id, b.created_at, b.updated_at
+		ORDER BY b.created_at DESC
+		LIMIT $2 OFFSET $3
+		`
+
+	rows, err := b.DB.Query(query, userId, limit, offset)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		blog := model.BlogSummary{}
+
+		err := rows.Scan(
+			&blog.Id,
+			&blog.Title,
+			&blog.UserId,
+			&blog.Slug,
+			&blog.Content,
+			&blog.Visibility,
+			&blog.CreatedAt,
+			&blog.UpdatedAt,
+			&blog.Thumbnail,
+			&blog.LikesCount,
+			&blog.DislikeCount,
+			&blog.CommentCount,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		blogs = append(blogs, blog)
+	}
+
+	// total blogs
+	var total int
+	err = b.DB.QueryRow("SELECT COUNT(*) FROM blogs WHERE blogs.user_id = $1", userId).Scan(&total)
+
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := (total + limit - 1) / limit
+
+	return &model.PaginatedResponse[model.BlogSummary]{
+		Data: blogs,
+		Meta: model.PageMeta{
+			Total: total,
+			Page:  page,
+			Limit: limit,
+			Pages: totalPages,
+		},
+	}, nil
 }
 
 // get all the blogs of an user

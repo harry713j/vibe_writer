@@ -115,6 +115,28 @@ func (r *BlogService) UpdateBlog(userId uuid.UUID, slug, title, content string, 
 	return blog, err
 }
 
+// Change the blog visibility
+func (r *BlogService) ChangeBlogVisibility(userId uuid.UUID, slug string) (*model.BlogResponse, error) {
+	if _, err := r.userRepo.GetUserById(userId); err != nil {
+		return nil, ErrUserNotExists
+	}
+
+	blog, err := r.blogRepo.GetBlogBySlug(userId, slug)
+	if err != nil {
+		return nil, ErrBlogNotExists
+	}
+
+	err = r.blogRepo.UpdateBlogVisibility(userId, slug)
+
+	if err != nil {
+		return nil, err
+	}
+
+	blog.Visibility = !blog.Visibility
+	return blog, nil
+}
+
+// public blogs of an user
 func (r *BlogService) GetAllUserBlog(username string, page, limit int) (*model.PaginatedResponse[model.BlogSummary], error) {
 	user, err := r.userRepo.GetUserByUsername(username)
 
@@ -122,7 +144,22 @@ func (r *BlogService) GetAllUserBlog(username string, page, limit int) (*model.P
 		return nil, ErrUserNotExists
 	}
 
-	blogs, err := r.blogRepo.GetAllBlog(user.Id, page, limit)
+	blogs, err := r.blogRepo.GetAllPublicBlog(user.Id, page, limit)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return blogs, nil
+}
+
+// All the blogs of an user
+func (r *BlogService) GetAllBlog(userId uuid.UUID, page, limit int) (*model.PaginatedResponse[model.BlogSummary], error) {
+	if _, err := r.userRepo.GetUserById(userId); err != nil {
+		return nil, ErrUserNotExists
+	}
+
+	blogs, err := r.blogRepo.GetAllBlog(userId, page, limit)
 
 	if err != nil {
 		return nil, err

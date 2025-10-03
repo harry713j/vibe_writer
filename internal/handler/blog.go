@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi"
 	"github.com/harry713j/vibe_writer/internal/middleware"
@@ -131,4 +132,71 @@ func (h *BlogHandler) HandleDeleteBlog(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.RespondWithJSON(w, http.StatusNoContent, "")
+}
+
+func (h *BlogHandler) HandleGetBlogs(w http.ResponseWriter, r *http.Request) {
+	userId, ok := middleware.GetUserID(r)
+
+	if !ok {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	page, err := strconv.Atoi(r.URL.Query().Get("page"))
+
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid query params value")
+		return
+	}
+
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid query params value")
+		return
+	}
+
+	blogs, err := h.blogService.GetAllBlog(userId, page, limit)
+
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, blogs)
+}
+
+func (h *BlogHandler) HandleChangeBlogVisibility(w http.ResponseWriter, r *http.Request) {
+	userId, ok := middleware.GetUserID(r)
+
+	if !ok {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	slug := chi.URLParam(r, "slug")
+
+	if slug == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "empty params")
+		return
+	}
+
+	blog, err := h.blogService.ChangeBlogVisibility(userId, slug)
+
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrBlogNotExists) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, blog)
 }
