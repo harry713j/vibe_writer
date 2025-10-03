@@ -5,3 +5,4 @@ vendor/
 
 Dockerfile
 .dockerignore
+node_modules/

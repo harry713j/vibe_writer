@@ -1,13 +1,27 @@
 services:
   server:
     container_name: vibewriter-server
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
     depends_on:
       - db
     ports:
       - "8080:8080"
     env_file:
       - .env
+
+  web:
+    container_name: vibewriter-web
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    depends_on:
+      - server
+    ports:
+      - "3000:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8080
   db:
     image: postgres:17-alpine
     container_name: vibewriter-db
