@@ -56,7 +56,9 @@ func (h *AuthHandler) HandleSignup(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if errors.Is(err, service.ErrUsernameExists) || errors.Is(err, service.ErrEmailExists) ||
-			errors.Is(err, service.ErrShortPassword) {
+			errors.Is(err, utils.ErrShortPassword) || errors.Is(err, utils.ErrInvalidEmail) || errors.Is(err, utils.ErrInvalidUsername) ||
+			errors.Is(err, utils.ErrNoLowerCase) || errors.Is(err, utils.ErrNoNumber) || errors.Is(err, utils.ErrNoSpecialCharacter) ||
+			errors.Is(err, utils.ErrNoUpperCase) || errors.Is(err, utils.ErrShortEmail) || errors.Is(err, utils.ErrShortUsername) {
 			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
 			return
 		}

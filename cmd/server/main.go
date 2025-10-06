@@ -16,12 +16,7 @@ import (
 )
 
 func main() {
-	// load the environment variables
-	err := godotenv.Load()
-
-	if err != nil {
-		log.Println(".env file not found")
-	}
+	loadEnv()
 
 	dbConfig := config.LoadDBConfig()
 	db, err := db.ConnectDB(dbConfig)
@@ -69,4 +64,17 @@ func main() {
 
 	log.Println("Server has started on Port: ", serverConfig.Port)
 	log.Fatal(srv.ListenAndServe())
+}
+
+func loadEnv() {
+	// load the environment variables
+	err := godotenv.Load()
+
+	if err != nil {
+		log.Println(".env file not found")
+	}
+
+	if os.Getenv("PORT") == "" || os.Getenv("DATABASE_URL") == "" {
+		log.Println("PORT and DATABASE_URL require in .env file")
+	}
 }

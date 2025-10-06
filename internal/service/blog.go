@@ -113,9 +113,11 @@ func (r *BlogService) UpdateBlog(userId uuid.UUID, slug, title, content string, 
 	}
 
 	// remove the old photo url from cloud
-	for _, url := range removedUrls {
-		go DeleteFromCloud(url)
-	}
+	go func(removedUrls []string) {
+		for _, url := range removedUrls {
+			DeleteFromCloud(url)
+		}
+	}(removedUrls)
 
 	return blog, err
 }

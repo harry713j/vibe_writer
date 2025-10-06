@@ -8,12 +8,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/harry713j/vibe_writer/internal/model"
 	"github.com/harry713j/vibe_writer/internal/repo"
+	"github.com/harry713j/vibe_writer/internal/utils"
 )
 
 var (
 	ErrUsernameExists      = errors.New("username already exists")
 	ErrEmailExists         = errors.New("email already in use")
-	ErrShortPassword       = errors.New("at least 8 characters password required")
 	ErrWrongPassword       = errors.New("incorrect password")
 	ErrInvalidToken        = errors.New("invalid or corrupted token")
 	ErrExpiredToken        = errors.New("expired token")
@@ -41,6 +41,7 @@ func NewAuthService(userRepo *repo.UserRepository, profileRepo *repo.UserProfile
 	}
 }
 
+// TODO: Validate the username, email and password
 func (service *AuthService) RegisterUser(username, email, password string) (*model.User, error) {
 	// check if the user is already exists
 	_, err := service.userRepo.GetUserByUsername(username)
@@ -55,8 +56,16 @@ func (service *AuthService) RegisterUser(username, email, password string) (*mod
 		return nil, ErrEmailExists
 	}
 
-	if len(password) < 8 {
-		return nil, ErrShortPassword
+	if err = utils.ValidateUsername(username); err != nil {
+		return nil, err
+	}
+
+	if err = utils.ValidateEmail(email); err != nil {
+		return nil, err
+	}
+
+	if err = utils.ValidatePassword(password); err != nil {
+		return nil, err
 	}
 
 	// create user
