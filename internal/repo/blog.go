@@ -157,7 +157,7 @@ func (b *BlogRepository) GetAllPublicBlog(userId uuid.UUID, page, limit int) (*m
 		LEFT JOIN likes l ON l.blog_id = b.id
 		LEFT JOIN comments c ON c.blog_id = b.id
 		WHERE b.user_id = $1 AND b.visibility = true
-		GROUP BY b.id, b.title, b.slug, b.content, b.user_id, b.created_at, b.updated_at
+		GROUP BY b.id, b.title, b.slug, b.content, b.visibility, b.user_id, b.created_at, b.updated_at
 		ORDER BY b.created_at DESC
 		LIMIT $2 OFFSET $3
 		`

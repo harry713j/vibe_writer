@@ -252,3 +252,26 @@ func (h *UserProfileHandler) HandleGetAllComments(w http.ResponseWriter, r *http
 
 	utils.RespondWithJSON(w, http.StatusOK, map[string][]model.CommentWithStat{"comments": comments})
 }
+
+func (h *UserProfileHandler) HandleGetBookmarks(w http.ResponseWriter, r *http.Request) {
+	userId, ok := middleware.GetUserID(r)
+
+	if !ok {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	blogs, err := h.profileService.FetchBookmarks(userId)
+
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) {
+			utils.RespondWithError(w, http.StatusUnauthorized, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, blogs)
+}

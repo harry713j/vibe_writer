@@ -16,6 +16,7 @@ func UserProfileRoutes(h *handler.UserProfileHandler, auth func(http.Handler) ht
 		r.Patch("/avatar", h.HandleUpdateAvatar)
 		r.Get("/me", h.HandleGetOwnDetails)
 		r.Delete("/avatar", h.HandleRemoveAvatar)
+		r.Get("/bookmarks", h.HandleGetBookmarks)
 	})
 	r.Get("/{username}", h.HandleGetUserDetails)
 	r.Get("/{username}/blogs", h.HandleGetAllBlog)

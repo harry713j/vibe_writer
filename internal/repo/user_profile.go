@@ -93,3 +93,70 @@ func (u *UserProfileRepository) DeleteAvatarUrl(userId uuid.UUID) error {
 
 	return nil
 }
+
+func (u *UserProfileRepository) GetAllBookmarks(userId uuid.UUID) ([]model.BlogSummary, error) {
+	query := `
+		SELECT
+			b.id,
+			b.title,
+			b.slug,
+			b.content,
+			b.visibility,
+			b.user_id,
+			b.created_at,
+			b.updated_at,
+			COALESCE((
+				SELECT bp.photo_url FROM
+				blog_photos bp WHERE bp.blog_id = b.id
+				ORDER BY bp.id ASC
+			),'') AS blog_thumbnail,
+			COUNT(l.id) FILTER (WHERE like_type = 'like') AS likes_count,
+			COUNT(l.id) FILTER (WHERE like_type = 'dislike') AS dislikes_count,
+			COUNT(DISTINCT c.id) AS comments_count
+
+		FROM bookmarks bm
+		JOIN blogs b ON bm.blog_id = b.id
+		LEFT JOIN likes l ON l.blog_id = b.id
+		LEFT JOIN comments c ON c.blog_id = b.id
+		WHERE bm.user_id = $1
+		GROUP BY b.id, bm.id
+		ORDER BY bm.id DESC
+	`
+
+	var blogs []model.BlogSummary
+
+	rows, err := u.DB.Query(query, userId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var blog model.BlogSummary
+
+		err := rows.Scan(
+			&blog.Id,
+			&blog.Title,
+			&blog.UserId,
+			&blog.Slug,
+			&blog.Content,
+			&blog.Visibility,
+			&blog.CreatedAt,
+			&blog.UpdatedAt,
+			&blog.Thumbnail,
+			&blog.LikesCount,
+			&blog.DislikeCount,
+			&blog.CommentCount,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		blogs = append(blogs, blog)
+	}
+
+	return blogs, nil
+}

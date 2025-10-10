@@ -14,11 +14,12 @@ import (
 var (
 	ErrUsernameExists      = errors.New("username already exists")
 	ErrEmailExists         = errors.New("email already in use")
-	ErrWrongPassword       = errors.New("incorrect password")
+	ErrWrongPassword       = errors.New("invalid user credentials")
 	ErrInvalidToken        = errors.New("invalid or corrupted token")
 	ErrExpiredToken        = errors.New("expired token")
 	ErrExpiredRefreshToken = errors.New("refresh token is expired")
 	ErrInvalidRefreshToken = errors.New("invalid refresh token")
+	ErrUserNotExists       = errors.New("invalid user creadentials")
 )
 
 type AuthService struct {

@@ -21,6 +21,8 @@ func BlogRoutes(h *handler.BlogHandler, auth func(http.Handler) http.Handler) ch
 		r.Post("/{slug}/comments", h.HandleCreateComment)
 		r.Post("/{slug}/reactions", h.HandleToggleBlogLike)
 		r.Delete("/{slug}/reactions", h.HandleRemoveBlogLike)
+		r.Post("/{slug}/bookmarks", h.HandleCreateBookmark)
+		r.Delete("/{slug}/bookmarks", h.HandleRemoveBookmark)
 	})
 
 	return r

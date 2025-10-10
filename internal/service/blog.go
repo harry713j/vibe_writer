@@ -10,25 +10,26 @@ import (
 )
 
 type BlogService struct {
-	blogRepo    *repo.BlogRepository
-	userRepo    *repo.UserRepository
-	commentRepo *repo.CommentRepository
-	likeRepo    *repo.LikeRepository
+	blogRepo     *repo.BlogRepository
+	userRepo     *repo.UserRepository
+	commentRepo  *repo.CommentRepository
+	likeRepo     *repo.LikeRepository
+	bookmarkRepo *repo.BookmarkRepository
 }
 
 var (
 	ErrBlogNotExists = errors.New("no blog exists with this slug")
 	ErrTitleExists   = errors.New("blog with this title already exists")
-	ErrUserNotExists = errors.New("user not found")
 )
 
 func NewBlogService(blogRepo *repo.BlogRepository, userRepo *repo.UserRepository,
-	commentRepo *repo.CommentRepository, likeRepo *repo.LikeRepository) *BlogService {
+	commentRepo *repo.CommentRepository, likeRepo *repo.LikeRepository, bookmarkRepo *repo.BookmarkRepository) *BlogService {
 	return &BlogService{
-		blogRepo:    blogRepo,
-		userRepo:    userRepo,
-		commentRepo: commentRepo,
-		likeRepo:    likeRepo,
+		blogRepo:     blogRepo,
+		userRepo:     userRepo,
+		commentRepo:  commentRepo,
+		likeRepo:     likeRepo,
+		bookmarkRepo: bookmarkRepo,
 	}
 }
 
@@ -289,4 +290,32 @@ func (s *BlogService) RemoveBlogLike(userId uuid.UUID, slug string) error {
 	}
 
 	return s.likeRepo.DeleteBlogLike(userId, blog.Id)
+}
+
+func (s *BlogService) CreateBookmark(userId uuid.UUID, slug string) error {
+	if _, err := s.userRepo.GetUserById(userId); err != nil {
+		return ErrUserNotExists
+	}
+
+	blog, err := s.blogRepo.GetBlogBySlug(userId, slug)
+
+	if err != nil {
+		return ErrBlogNotExists
+	}
+
+	return s.bookmarkRepo.Upsert(userId, blog.Id)
+}
+
+func (s *BlogService) RemoveBookmark(userId uuid.UUID, slug string) error {
+	if _, err := s.userRepo.GetUserById(userId); err != nil {
+		return ErrUserNotExists
+	}
+
+	blog, err := s.blogRepo.GetBlogBySlug(userId, slug)
+
+	if err != nil {
+		return ErrBlogNotExists
+	}
+
+	return s.bookmarkRepo.Delete(userId, blog.Id)
 }

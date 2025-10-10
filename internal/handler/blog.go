@@ -317,3 +317,61 @@ func (h *BlogHandler) HandleRemoveBlogLike(w http.ResponseWriter, r *http.Reques
 
 	utils.RespondWithJSON(w, http.StatusNoContent, "")
 }
+
+func (h *BlogHandler) HandleCreateBookmark(w http.ResponseWriter, r *http.Request) {
+	userId, ok := middleware.GetUserID(r)
+
+	if !ok {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	slug := chi.URLParam(r, "slug")
+	if slug == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid params")
+		return
+	}
+
+	err := h.blogService.CreateBookmark(userId, slug)
+
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrBlogNotExists) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusCreated, map[string]string{"message": "Bookmark created successfully"})
+}
+
+func (h *BlogHandler) HandleRemoveBookmark(w http.ResponseWriter, r *http.Request) {
+	userId, ok := middleware.GetUserID(r)
+
+	if !ok {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	slug := chi.URLParam(r, "slug")
+	if slug == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid params")
+		return
+	}
+
+	err := h.blogService.RemoveBookmark(userId, slug)
+
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrBlogNotExists) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusCreated, map[string]string{"message": "Bookmark removed successfully"})
+}

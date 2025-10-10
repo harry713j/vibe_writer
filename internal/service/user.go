@@ -120,7 +120,6 @@ func (p *UserProfileService) RemoveAvatar(userId uuid.UUID) error {
 }
 
 func (s *UserProfileService) GetAllCommentsOfBlog(username, slug string) ([]model.CommentWithStat, error) {
-
 	user, err := s.userRepo.GetUserByUsername(username)
 
 	if err != nil {
@@ -140,4 +139,18 @@ func (s *UserProfileService) GetAllCommentsOfBlog(username, slug string) ([]mode
 	}
 
 	return comments, nil
+}
+
+func (s *UserProfileService) FetchBookmarks(userId uuid.UUID) ([]model.BlogSummary, error) {
+	if _, err := s.userRepo.GetUserById(userId); err != nil {
+		return nil, ErrUserNotExists
+	}
+
+	blogs, err := s.profileRepo.GetAllBookmarks(userId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return blogs, nil
 }

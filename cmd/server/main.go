@@ -37,10 +37,11 @@ func main() {
 	blogRepo := repo.NewBlogRepository(db)
 	commentRepo := repo.NewCommentRepository(db)
 	likeRepo := repo.NewLikeRepository(db)
+	bookmarkRepo := repo.NewBookmarkRepository(db)
 
 	authService := service.NewAuthService(userRepo, profileRepo, refreshTokenRepo, jwtSecret, accessTokenTTL)
 	userProfileService := service.NewUserProfileService(profileRepo, userRepo, blogRepo, commentRepo)
-	blogService := service.NewBlogService(blogRepo, userRepo, commentRepo, likeRepo)
+	blogService := service.NewBlogService(blogRepo, userRepo, commentRepo, likeRepo, bookmarkRepo)
 	commentService := service.NewCommentService(commentRepo, userRepo, likeRepo)
 	uploadService := service.NewUploadService()
 

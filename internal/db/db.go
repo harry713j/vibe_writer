@@ -13,7 +13,6 @@ func ConnectDB(config *config.DBConfig) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	// test connection
 	if err := db.Ping(); err != nil {
 		return nil, err
