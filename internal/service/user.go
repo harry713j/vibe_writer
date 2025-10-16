@@ -1,9 +1,16 @@
 package service
 
 import (
+	"errors"
+
 	"github.com/google/uuid"
 	"github.com/harry713j/vibe_writer/internal/model"
 	"github.com/harry713j/vibe_writer/internal/repo"
+)
+
+var (
+	ErrInvalidFollowingUser = errors.New("user not exist to follow or unfollow")
+	ErrInvalidAuthor        = errors.New("author not exists")
 )
 
 type UserProfileService struct {
@@ -11,15 +18,17 @@ type UserProfileService struct {
 	profileRepo *repo.UserProfileRepository
 	blogRepo    *repo.BlogRepository
 	commentRepo *repo.CommentRepository
+	followRepo  *repo.FollowRepository
 }
 
 func NewUserProfileService(profile *repo.UserProfileRepository, user *repo.UserRepository,
-	blog *repo.BlogRepository, comment *repo.CommentRepository) *UserProfileService {
+	blog *repo.BlogRepository, comment *repo.CommentRepository, followRepo *repo.FollowRepository) *UserProfileService {
 	return &UserProfileService{
 		profileRepo: profile,
 		userRepo:    user,
 		blogRepo:    blog,
 		commentRepo: comment,
+		followRepo:  followRepo,
 	}
 }
 
@@ -153,4 +162,69 @@ func (s *UserProfileService) FetchBookmarks(userId uuid.UUID) ([]model.BlogSumma
 	}
 
 	return blogs, nil
+}
+
+/* Follow */
+func (s *UserProfileService) CreateFollow(userId uuid.UUID, followingUsername string) error {
+	if _, err := s.userRepo.GetUserById(userId); err != nil {
+		return ErrUserNotExists
+	}
+
+	followingUser, err := s.userRepo.GetUserByUsername(followingUsername)
+	if err != nil {
+		return ErrInvalidFollowingUser
+	}
+
+	err = s.followRepo.Create(userId, followingUser.Id)
+	return err
+}
+
+func (s *UserProfileService) RemoveFollow(userId uuid.UUID, followingUsername string) error {
+	if _, err := s.userRepo.GetUserById(userId); err != nil {
+		return ErrUserNotExists
+	}
+
+	followingUser, err := s.userRepo.GetUserByUsername(followingUsername)
+	if err != nil {
+		return ErrInvalidFollowingUser
+	}
+
+	err = s.followRepo.Delete(userId, followingUser.Id)
+	return err
+}
+
+func (s *UserProfileService) FetchAllFollower(userId uuid.UUID, followingUsername string, page, limit int) (*model.PaginatedResponse[model.FollowResponse], error) {
+	if _, err := s.userRepo.GetUserById(userId); err != nil {
+		return nil, ErrUserNotExists
+	}
+
+	followingUser, err := s.userRepo.GetUserByUsername(followingUsername)
+	if err != nil {
+		return nil, ErrInvalidAuthor
+	}
+
+	followers, err := s.followRepo.GetAllFollower(followingUser.Id, page, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return followers, nil
+}
+
+func (s *UserProfileService) FetchAllFollowing(userId uuid.UUID, followerUsername string, page, limit int) (*model.PaginatedResponse[model.FollowResponse], error) {
+	if _, err := s.userRepo.GetUserById(userId); err != nil {
+		return nil, ErrUserNotExists
+	}
+
+	followerUser, err := s.userRepo.GetUserByUsername(followerUsername)
+	if err != nil {
+		return nil, ErrInvalidAuthor
+	}
+
+	followings, err := s.followRepo.GetAllFollowing(followerUser.Id, page, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return followings, nil
 }

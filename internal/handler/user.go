@@ -153,10 +153,10 @@ func (u *UserProfileHandler) HandleGetAllBlog(w http.ResponseWriter, r *http.Req
 	username := chi.URLParam(r, "username")
 
 	if username == "" {
-		utils.RespondWithError(w, http.StatusBadRequest, "Inavlid params")
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid params")
 		return
 	}
-	// extracr query parameters
+	// extract query parameters
 	page, err := strconv.Atoi(r.URL.Query().Get("page"))
 
 	if err != nil {
@@ -274,4 +274,141 @@ func (h *UserProfileHandler) HandleGetBookmarks(w http.ResponseWriter, r *http.R
 	}
 
 	utils.RespondWithJSON(w, http.StatusOK, blogs)
+}
+
+/* follow */
+func (h *UserProfileHandler) HandleCreateFollow(w http.ResponseWriter, r *http.Request) {
+	userId, ok := middleware.GetUserID(r)
+
+	if !ok {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	followingUsername := chi.URLParam(r, "username")
+	if followingUsername == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid params")
+		return
+	}
+
+	err := h.profileService.CreateFollow(userId, followingUsername)
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrInvalidFollowingUser) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusCreated, map[string]string{"message": "Successful following user"})
+}
+
+func (h *UserProfileHandler) HandleRemoveFollow(w http.ResponseWriter, r *http.Request) {
+	userId, ok := middleware.GetUserID(r)
+
+	if !ok {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	followingUsername := chi.URLParam(r, "username")
+	if followingUsername == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid params")
+		return
+	}
+
+	err := h.profileService.RemoveFollow(userId, followingUsername)
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrInvalidFollowingUser) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusCreated, map[string]string{"message": "Successful unfollow user"})
+}
+
+func (h *UserProfileHandler) HandleFetchFollowers(w http.ResponseWriter, r *http.Request) {
+	userId, ok := middleware.GetUserID(r)
+
+	if !ok {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	authorUsername := chi.URLParam(r, "username")
+	if authorUsername == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid params")
+		return
+	}
+
+	page, err := strconv.Atoi(r.URL.Query().Get("page"))
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid query params value")
+		return
+	}
+
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid query params value")
+		return
+	}
+
+	followers, err := h.profileService.FetchAllFollower(userId, authorUsername, page, limit)
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrInvalidAuthor) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, followers)
+}
+
+func (h *UserProfileHandler) HandleFetchFollowings(w http.ResponseWriter, r *http.Request) {
+	userId, ok := middleware.GetUserID(r)
+
+	if !ok {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	authorUsername := chi.URLParam(r, "username")
+	if authorUsername == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid params")
+		return
+	}
+
+	page, err := strconv.Atoi(r.URL.Query().Get("page"))
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid query params value")
+		return
+	}
+
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid query params value")
+		return
+	}
+
+	followings, err := h.profileService.FetchAllFollowing(userId, authorUsername, page, limit)
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotExists) || errors.Is(err, service.ErrInvalidAuthor) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.RespondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, followings)
 }

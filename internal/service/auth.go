@@ -19,12 +19,12 @@ var (
 	ErrExpiredToken        = errors.New("expired token")
 	ErrExpiredRefreshToken = errors.New("refresh token is expired")
 	ErrInvalidRefreshToken = errors.New("invalid refresh token")
-	ErrUserNotExists       = errors.New("invalid user creadentials")
+	ErrUserNotExists       = errors.New("invalid user credentials")
 )
 
 type AuthService struct {
 	userRepo         *repo.UserRepository
-	profilrRepo      *repo.UserProfileRepository
+	profileRepo      *repo.UserProfileRepository
 	refreshTokenRepo *repo.RefreshTokenRepository
 	jwtSecret        []byte
 	accessTokenTTL   time.Duration
@@ -35,7 +35,7 @@ func NewAuthService(userRepo *repo.UserRepository, profileRepo *repo.UserProfile
 
 	return &AuthService{
 		userRepo:         userRepo,
-		profilrRepo:      profileRepo,
+		profileRepo:      profileRepo,
 		refreshTokenRepo: refreshTokenRepo,
 		jwtSecret:        []byte(jwtSecret),
 		accessTokenTTL:   accessTokenTTL,
@@ -82,7 +82,7 @@ func (service *AuthService) RegisterUser(username, email, password string) (*mod
 		return nil, err
 	}
 	// create user profile
-	if _, err := service.profilrRepo.CreateUserProfile(user.Id); err != nil {
+	if _, err := service.profileRepo.CreateUserProfile(user.Id); err != nil {
 		return nil, err
 	}
 
